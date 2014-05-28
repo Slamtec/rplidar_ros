@@ -8,8 +8,6 @@ Visit RoboPeak Website for more details about RPLIDAR.
 How to build rplidar ros package
 =====================================================================
     1) Clone this project to your catkin's workspace src folder
-    2) Download and put rplidar_sdk in the catkin's workspace
-    3) Modify RPLIDAR_SDK_PATH in the CMakeLists.txt of rplidar_ros 
     2) Running catkin_make to build rplidarNode and rplidarNodeClient
 
 How to run rplidar ros package
