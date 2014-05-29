@@ -54,7 +54,7 @@ void publish_scan(ros::Publisher *pub,
                   size_t node_count, ros::Time start,
                   double scan_time, bool inverted, 
                   float angle_min, float angle_max, 
-                  size_t zero_pos, std::string frame_id)
+                  std::string frame_id)
 {
     static int scan_count = 0;
     sensor_msgs::LaserScan scan_msg;
@@ -66,33 +66,23 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.angle_min = angle_min;
     scan_msg.angle_max = angle_max;
     scan_msg.angle_increment = 
-        (scan_msg.angle_max - scan_msg.angle_min) / (double)node_count;
+        (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
 
     scan_msg.scan_time = scan_time;
-    scan_msg.time_increment = scan_time / (double)node_count;
+    scan_msg.time_increment = scan_time / (double)(node_count-1);
 
     scan_msg.range_min = 0.15;
     scan_msg.range_max = 6.;
 
     scan_msg.ranges.resize(node_count);
     if (!inverted) { // assumes scan window at the top
-        // The full round of scan data may not always start from zero degree.
-        // Needs re-order the range array from zero position
-        for (size_t i = zero_pos; i < node_count; i++) {
-            scan_msg.ranges[i-zero_pos] 
-                = (float)nodes[i].distance_q2/4.0f/1000;
-        }
-        for (size_t i = 0; i < zero_pos; i++) {
-            scan_msg.ranges[i+node_count-zero_pos] 
+        for (size_t i = 0; i < node_count; i++) {
+            scan_msg.ranges[i] 
                 = (float)nodes[i].distance_q2/4.0f/1000;
         }
     } else {
-        for (size_t i = zero_pos; i < node_count; i++) {
-            scan_msg.ranges[node_count-1-i+zero_pos] 
-                = (float)nodes[i].distance_q2/4.0f/1000;
-        }
-        for (size_t i = 0; i < zero_pos; i++) {
-            scan_msg.ranges[zero_pos-1-i] 
+        for (size_t i = 0; i < node_count; i++) {
+            scan_msg.ranges[node_count-1-i] 
                 = (float)nodes[i].distance_q2/4.0f/1000;
         }
     }
@@ -186,34 +176,37 @@ int main(int argc, char * argv[]) {
         end_scan_time = ros::Time::now();
         scan_duration = (end_scan_time - start_scan_time).toSec() * 1e-3;
 
-        // find zero_position in the full scan
-        size_t zero_pos = 0;
-        float pre_degree = (nodes[0].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
-        if (IS_OK(op_result)) {
-            for (size_t pos = 0; pos < count ; ++pos) {
-                float degree = (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
-                if (zero_pos == 0 && (pre_degree - degree > 180)) {
-                    zero_pos = pos;
-                }
-                pre_degree = degree;
+        if (op_result == RESULT_OK) {
+            op_result = drv->ascendScanData(nodes, count);
+
+            if (op_result == RESULT_OK) {
+                int start_node = 0, end_node = 0;
+                int i = 0;
+                // find the first valid node and last valid node
+                while (nodes[i++].distance_q2 == 0);
+                start_node = i-1;
+                i = count -1;
+                while (nodes[i--].distance_q2 == 0);
+                end_node = i+1;
+
+                float angle_min = DEG2RAD((float)(nodes[start_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+                float angle_max = DEG2RAD((float)(nodes[end_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+
+                publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1, 
+                             start_scan_time, scan_duration, inverted,  
+                             angle_min, angle_max, 
+                             frame_id);
+            } else if (op_result == RESULT_OPERATION_FAIL) {
+                // All the data is invalid, just publish them
+                float angle_min = DEG2RAD(0.0f);
+                float angle_max = DEG2RAD(360.0f);
+
+                publish_scan(&scan_pub, nodes, count, 
+                             start_scan_time, scan_duration, inverted,  
+                             angle_min, angle_max, 
+                             frame_id);
             }
         }
-
-        float angle_min = DEG2RAD(0.0);
-        float angle_max = DEG2RAD(360.0);
-        if(zero_pos) {
-            angle_min = DEG2RAD((float)(nodes[zero_pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-            angle_max = DEG2RAD((float)(nodes[zero_pos-1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-        } else {
-            angle_min = DEG2RAD((float)(nodes[zero_pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-            angle_max = DEG2RAD((float)(nodes[count-1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-        }
-
-
-        publish_scan(&scan_pub, nodes, count, 
-                     start_scan_time, scan_duration, inverted,  
-                     angle_min, angle_max, 
-                     zero_pos, frame_id);
 
         ros::spinOnce();
     }

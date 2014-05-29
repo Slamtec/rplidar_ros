@@ -139,6 +139,7 @@ public:
     ///
     /// 1) The first node of the grabbed data array (nodebuffer[0]) must be the first sample of a scan, i.e. the start_bit == 1
     /// 2) All data nodes are belong to exactly ONE complete 360-degrees's scan
+    /// 3) Note, the angle data in one scan may not be ascending. You can use API ascendScanData to reorder the nodebuffer.
     ///
     /// \param nodebuffer     Buffer provided by the caller application to store the scan data
     ///
@@ -151,6 +152,16 @@ public:
     ///
     /// \The caller application can set the timeout value to Zero(0) to make this interface always returns immediately to achieve non-block operation.
 	virtual u_result grabScanData(rplidar_response_measurement_node_t * nodebuffer, size_t & count, _u32 timeout = DEFAULT_TIMEOUT) = 0;
+
+    /// Ascending the scan data according to the angle value in the scan.
+    ///
+    /// \param nodebuffer     Buffer provided by the caller application to do the reorder. Should be retrived from the grabScanData
+    ///
+    /// \param count          The caller must initialize this parameter to set the max data count of the provided buffer (in unit of rplidar_response_measurement_node_t).
+    ///                       Once the interface returns, this parameter will store the actual received data count.
+    /// The interface will return RESULT_OPERATION_FAIL when all the scan data is invalid. 
+    virtual u_result ascendScanData(rplidar_response_measurement_node_t * nodebuffer, size_t count) = 0;
+
 protected:
     RPlidarDriver() {}
     virtual ~RPlidarDriver() {}

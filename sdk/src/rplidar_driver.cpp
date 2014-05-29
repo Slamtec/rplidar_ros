@@ -325,6 +325,85 @@ u_result RPlidarDriverSerialImpl::grabScanData(rplidar_response_measurement_node
     }
 }
 
+u_result RPlidarDriverSerialImpl::ascendScanData(rplidar_response_measurement_node_t * nodebuffer, size_t count)
+{
+    float inc_origin_angle = 360.0/count;
+    rplidar_response_measurement_node_t *tmpbuffer = new rplidar_response_measurement_node_t[count];
+    int i = 0;
+
+    //Tune head
+    for (i = 0; i < count; i++) {
+        if(nodebuffer[i].distance_q2 == 0) {
+            continue;
+        } else {
+            while(i != 0) {
+                i--;
+                float expect_angle = (nodebuffer[i+1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f - inc_origin_angle;
+                if (expect_angle < 0.0f) break;
+                _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
+                nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+            }
+            break;
+        }
+    }
+
+    // all the data is invalid
+    if (i == count) return RESULT_OPERATION_FAIL;
+
+    //Tune tail
+    for (i = count - 1; i >= 0; i--) {
+        if(nodebuffer[i].distance_q2 == 0) {
+            continue;
+        } else {
+            while(i != (count - 1)) {
+                i++;
+                float expect_angle = (nodebuffer[i-1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f + inc_origin_angle;
+                if (expect_angle > 360.0f) expect_angle -= 360.0f;
+                _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
+                nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+            }
+            break;
+        }
+    }
+
+    //Fill invalid angle in the scan
+    float frontAngle = (nodebuffer[0].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
+    for (i = 0; i < count; i++) {
+        if(nodebuffer[i].distance_q2 == 0) {
+            float expect_angle =  frontAngle + i * inc_origin_angle;
+            if (expect_angle > 360.0f) expect_angle -= 360.0f;
+            _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
+            nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+        }
+    }
+            
+    // find zero_position in the full scan
+    size_t zero_pos = 0;
+    float pre_degree = (nodebuffer[0].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
+
+    for (i = 0; i < count ; ++i) {
+        float degree = (nodebuffer[i].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
+        if (zero_pos == 0 && (pre_degree - degree > 180)) {
+            zero_pos = i;
+            break;
+        }
+        pre_degree = degree;
+    }
+
+    // reorder the scan
+    for (i = zero_pos; i < count; i++) {
+        tmpbuffer[i-zero_pos] = nodebuffer[i];
+    }
+    for (i = 0; i < zero_pos; i++) {
+        tmpbuffer[i+count-zero_pos] = nodebuffer[i];
+    }
+
+    memcpy(nodebuffer, tmpbuffer, count*sizeof(rplidar_response_measurement_node_t));
+    delete tmpbuffer;
+
+    return RESULT_OK;
+}
+
 u_result RPlidarDriverSerialImpl::_waitNode(rplidar_response_measurement_node_t * node, _u32 timeout)
 {
     int  recvPos = 0;
