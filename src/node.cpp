@@ -126,6 +126,7 @@ int main(int argc, char * argv[]) {
     int serial_baudrate;
     std::string frame_id;
     bool inverted;
+    bool angle_compensate;
 
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
@@ -134,6 +135,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<int>("serial_baudrate", serial_baudrate, 115200); 
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, "false");
+    nh_private.param<bool>("angle_compensate", angle_compensate, "true");
 
     u_result     op_result;
 
@@ -179,27 +181,53 @@ int main(int argc, char * argv[]) {
         if (op_result == RESULT_OK) {
             op_result = drv->ascendScanData(nodes, count);
 
+            float angle_min = DEG2RAD(0.0f);
+            float angle_max = DEG2RAD(359.0f);
             if (op_result == RESULT_OK) {
-                int start_node = 0, end_node = 0;
-                int i = 0;
-                // find the first valid node and last valid node
-                while (nodes[i++].distance_q2 == 0);
-                start_node = i-1;
-                i = count -1;
-                while (nodes[i--].distance_q2 == 0);
-                end_node = i+1;
-
-                float angle_min = DEG2RAD((float)(nodes[start_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-                float angle_max = DEG2RAD((float)(nodes[end_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-
-                publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1, 
+                if (angle_compensate) {
+                    const int angle_compensate_nodes_count = 360;
+                    const int angle_compensate_multiple = 1;
+                    int angle_compensate_offset = 0;
+                    rplidar_response_measurement_node_t angle_compensate_nodes[angle_compensate_nodes_count];
+                    memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_t));
+                    int i = 0, j = 0;
+                    for( ; i < count; i++ ) {
+                        if (nodes[i].distance_q2 != 0) {
+                            float angle = (float)((nodes[i].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+                            int angle_value = (int)(angle * angle_compensate_multiple);
+                            if ((angle_value - angle_compensate_offset) < 0) angle_compensate_offset = angle_value;
+                            for (j = 0; j < angle_compensate_multiple; j++) {
+                                angle_compensate_nodes[angle_value-angle_compensate_offset+j] = nodes[i];
+                            }
+                        }
+                    }
+  
+                    publish_scan(&scan_pub, angle_compensate_nodes, angle_compensate_nodes_count,
                              start_scan_time, scan_duration, inverted,  
                              angle_min, angle_max, 
                              frame_id);
+                } else {
+                    int start_node = 0, end_node = 0;
+                    int i = 0;
+                    // find the first valid node and last valid node
+                    while (nodes[i++].distance_q2 == 0);
+                    start_node = i-1;
+                    i = count -1;
+                    while (nodes[i--].distance_q2 == 0);
+                    end_node = i+1;
+
+                    angle_min = DEG2RAD((float)(nodes[start_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+                    angle_max = DEG2RAD((float)(nodes[end_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+
+                    publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1, 
+                             start_scan_time, scan_duration, inverted,  
+                             angle_min, angle_max, 
+                             frame_id);
+               }
             } else if (op_result == RESULT_OPERATION_FAIL) {
                 // All the data is invalid, just publish them
                 float angle_min = DEG2RAD(0.0f);
-                float angle_max = DEG2RAD(360.0f);
+                float angle_max = DEG2RAD(359.0f);
 
                 publish_scan(&scan_pub, nodes, count, 
                              start_scan_time, scan_duration, inverted,  

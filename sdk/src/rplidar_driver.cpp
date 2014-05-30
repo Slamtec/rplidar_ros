@@ -339,7 +339,7 @@ u_result RPlidarDriverSerialImpl::ascendScanData(rplidar_response_measurement_no
             while(i != 0) {
                 i--;
                 float expect_angle = (nodebuffer[i+1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f - inc_origin_angle;
-                if (expect_angle < 0.0f) break;
+                if (expect_angle < 0.0f) expect_angle = 0.0f;
                 _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
                 nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
             }
@@ -381,7 +381,7 @@ u_result RPlidarDriverSerialImpl::ascendScanData(rplidar_response_measurement_no
     size_t zero_pos = 0;
     float pre_degree = (nodebuffer[0].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
 
-    for (i = 0; i < count ; ++i) {
+    for (i = 1; i < count ; ++i) {
         float degree = (nodebuffer[i].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
         if (zero_pos == 0 && (pre_degree - degree > 180)) {
             zero_pos = i;
