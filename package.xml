@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>rplidar_ros</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <description>The rplidar ros package</description>
 
   <maintainer email="mickey.leen@gmail.com">Ling</maintainer>
