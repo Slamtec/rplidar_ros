@@ -107,9 +107,9 @@ public:
     virtual u_result getDeviceInfo(rplidar_response_device_info_t & info, _u32 timeout = DEFAULT_TIMEOUT) = 0;
 
 
-    /// Calcuate RPLIDAR's current scanning frequency from the given scan data
+    /// Calculate RPLIDAR's current scanning frequency from the given scan data
     /// Please refer to the application note doc for details
-    /// Remark: the calcuation will be incorrect if the specified scan data doesn't contains enough data
+    /// Remark: the calculation will be incorrect if the specified scan data doesn't contain enough data
     ///
     /// \param nodebuffer    The buffer belongs to a 360degress scan data
     ///
