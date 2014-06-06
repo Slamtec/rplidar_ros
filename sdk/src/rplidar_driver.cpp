@@ -348,7 +348,10 @@ u_result RPlidarDriverSerialImpl::ascendScanData(rplidar_response_measurement_no
     }
 
     // all the data is invalid
-    if (i == count) return RESULT_OPERATION_FAIL;
+    if (i == count){
+        delete[] tmpbuffer;
+        return RESULT_OPERATION_FAIL;
+    }
 
     //Tune tail
     for (i = count - 1; i >= 0; i--) {
@@ -399,7 +402,7 @@ u_result RPlidarDriverSerialImpl::ascendScanData(rplidar_response_measurement_no
     }
 
     memcpy(nodebuffer, tmpbuffer, count*sizeof(rplidar_response_measurement_node_t));
-    delete tmpbuffer;
+    delete[] tmpbuffer;
 
     return RESULT_OK;
 }
