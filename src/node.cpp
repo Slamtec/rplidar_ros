@@ -77,13 +77,19 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.ranges.resize(node_count);
     if (!inverted) { // assumes scan window at the top
         for (size_t i = 0; i < node_count; i++) {
-            scan_msg.ranges[i] 
-                = (float)nodes[i].distance_q2/4.0f/1000;
+            float read_value = (float) nodes[i].distance_q2/4.0f/1000;
+            if (read_value == 0.0)
+                scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+            else
+                scan_msg.ranges[i] = read_value;
         }
     } else {
         for (size_t i = 0; i < node_count; i++) {
-            scan_msg.ranges[node_count-1-i] 
-                = (float)nodes[i].distance_q2/4.0f/1000;
+            float read_value = (float)nodes[i].distance_q2/4.0f/1000;
+            if (read_value == 0.0)
+                scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
+            else
+                scan_msg.ranges[node_count-1-i] = read_value;
         }
     }
 
@@ -123,10 +129,10 @@ int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
 
     std::string serial_port;
-    int serial_baudrate;
+    int serial_baudrate = 115200;
     std::string frame_id;
-    bool inverted;
-    bool angle_compensate;
+    bool inverted = false;
+    bool angle_compensate = true;
 
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
