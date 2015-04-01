@@ -63,8 +63,8 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.header.frame_id = frame_id;
     scan_count++;
 
-    scan_msg.angle_min = angle_min;
-    scan_msg.angle_max = angle_max;
+    scan_msg.angle_min =  M_PI - angle_min;
+    scan_msg.angle_max =  M_PI - angle_max;
     scan_msg.angle_increment = 
         (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
 
