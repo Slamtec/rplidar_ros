@@ -280,9 +280,6 @@ void raw_serial::setDTR()
   ioctl(serial_fd, TIOCMGET, &status);
   status |= TIOCM_DTR;
   ioctl(serial_fd, TIOCMSET, &status);
-  
-  //uint32_t controll = TIOCM_DTR;
-  //ioctl(serial_fd, TIOCMBIS, &controll);
 }
 
 void raw_serial::clearDTR()
@@ -293,10 +290,6 @@ void raw_serial::clearDTR()
   ioctl(serial_fd, TIOCMGET, &status);
   status &= ~TIOCM_DTR;
   ioctl(serial_fd, TIOCMSET, &status);
-  
-  //Clear the DTR bit to let the motor spin
-  //uint32_t controll = TIOCM_DTR;
-  //ioctl(serial_fd, TIOCMBIC, &controll);
 }
 
 void raw_serial::_init()
