@@ -65,6 +65,9 @@ public:
 
     virtual size_t rxqueue_count();
 
+	virtual void setDTR();
+	virtual void clearDTR();
+	
     _u32 getTermBaudBitmap(_u32 baud);
 protected:
     bool open(const char * portname, uint32_t baudrate, uint32_t flags = NULL);

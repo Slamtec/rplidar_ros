@@ -38,6 +38,7 @@
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
+#include "std_srvs/Empty.h"
 
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 
@@ -48,6 +49,8 @@
 #define DEG2RAD(x) ((x)*M_PI/180.)
 
 using namespace rp::standalone::rplidar;
+
+RPlidarDriver * drv = NULL;
 
 void publish_scan(ros::Publisher *pub, 
                   rplidar_response_measurement_node_t *nodes, 
@@ -123,6 +126,30 @@ bool checkRPLIDARHealth(RPlidarDriver * drv)
     }
 }
 
+bool stop_motor(std_srvs::Empty::Request &req,
+				std_srvs::Empty::Response &res)
+{
+  if(!drv)
+	return false;
+
+  ROS_DEBUG("Stop motor");
+  drv->stop();
+  drv->stopMotor();
+  return true;
+}
+
+bool start_motor(std_srvs::Empty::Request &req,
+				std_srvs::Empty::Response &res)
+{
+  if(!drv)
+	return false;
+  ROS_DEBUG("Start motor");
+  drv->startMotor();
+  drv->startScan();;
+  return true;
+}
+
+
 int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
 
@@ -140,12 +167,11 @@ int main(int argc, char * argv[]) {
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, "false");
     nh_private.param<bool>("angle_compensate", angle_compensate, "true");
-
+	
     u_result     op_result;
-
+   
     // create the driver instance
-    RPlidarDriver * drv = 
-        RPlidarDriver::CreateDriver(RPlidarDriver::DRIVER_TYPE_SERIALPORT);
+	drv = RPlidarDriver::CreateDriver(RPlidarDriver::DRIVER_TYPE_SERIALPORT);
     
     if (!drv) {
         fprintf(stderr, "Create Driver fail, exit\n");
@@ -166,6 +192,10 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
+
+	ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
+	ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
+	
     // start scan...
     drv->startScan();
 
@@ -242,8 +272,8 @@ int main(int argc, char * argv[]) {
 
         ros::spinOnce();
     }
-
+	
     // done!
-    RPlidarDriver::DisposeDriver(drv);
+	RPlidarDriver::DisposeDriver(drv);
     return 0;
 }
