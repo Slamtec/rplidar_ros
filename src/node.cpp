@@ -2,26 +2,26 @@
  * Copyright (c) 2014, RoboPeak
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
+ * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice, 
+ * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- *    this list of conditions and the following disclaimer in the documentation 
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
@@ -31,7 +31,7 @@
  *
  *  Copyright 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- * 
+ *
  */
 
 
@@ -39,6 +39,7 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "std_srvs/Empty.h"
+#include <algorithm>
 
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 
@@ -52,11 +53,11 @@ using namespace rp::standalone::rplidar;
 
 RPlidarDriver * drv = NULL;
 
-void publish_scan(ros::Publisher *pub, 
-                  rplidar_response_measurement_node_t *nodes, 
+void publish_scan(ros::Publisher *pub,
+                  rplidar_response_measurement_node_t *nodes,
                   size_t node_count, ros::Time start,
-                  double scan_time, bool inverted, 
-                  float angle_min, float angle_max, 
+                  double scan_time, bool inverted,
+                  float angle_min, float angle_max,
                   std::string frame_id)
 {
     static int scan_count = 0;
@@ -66,9 +67,15 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.header.frame_id = frame_id;
     scan_count++;
 
-    scan_msg.angle_min =  M_PI - angle_min;
-    scan_msg.angle_max =  M_PI - angle_max;
-    scan_msg.angle_increment = 
+    bool reverse = (angle_max > angle_min);
+    if ( reverse ) {
+      scan_msg.angle_min =  M_PI - angle_max;
+      scan_msg.angle_max =  M_PI - angle_min;
+    } else {
+      scan_msg.angle_min =  M_PI - angle_min;
+      scan_msg.angle_max =  M_PI - angle_max;
+    }
+    scan_msg.angle_increment =
         (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
 
     scan_msg.scan_time = scan_time;
@@ -97,6 +104,10 @@ void publish_scan(ros::Publisher *pub,
                 scan_msg.ranges[node_count-1-i] = read_value;
             scan_msg.intensities[node_count-1-i] = (float) (nodes[i].sync_quality >> 2);
         }
+    }
+    if ( reverse ) {
+      std::reverse(scan_msg.ranges.begin(), scan_msg.ranges.end());
+      std::reverse(scan_msg.intensities.begin(), scan_msg.intensities.end());
     }
 
     pub->publish(scan_msg);
@@ -237,8 +248,8 @@ int main(int argc, char * argv[]) {
                     }
   
                     publish_scan(&scan_pub, angle_compensate_nodes, angle_compensate_nodes_count,
-                             start_scan_time, scan_duration, inverted,  
-                             angle_min, angle_max, 
+                             start_scan_time, scan_duration, inverted,
+                             angle_min, angle_max,
                              frame_id);
                 } else {
                     int start_node = 0, end_node = 0;
@@ -253,9 +264,9 @@ int main(int argc, char * argv[]) {
                     angle_min = DEG2RAD((float)(nodes[start_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
                     angle_max = DEG2RAD((float)(nodes[end_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
 
-                    publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1, 
-                             start_scan_time, scan_duration, inverted,  
-                             angle_min, angle_max, 
+                    publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1,
+                             start_scan_time, scan_duration, inverted,
+                             angle_min, angle_max,
                              frame_id);
                }
             } else if (op_result == RESULT_OPERATION_FAIL) {
@@ -263,9 +274,9 @@ int main(int argc, char * argv[]) {
                 float angle_min = DEG2RAD(0.0f);
                 float angle_max = DEG2RAD(359.0f);
 
-                publish_scan(&scan_pub, nodes, count, 
-                             start_scan_time, scan_duration, inverted,  
-                             angle_min, angle_max, 
+                publish_scan(&scan_pub, nodes, count,
+                             start_scan_time, scan_duration, inverted,
+                             angle_min, angle_max,
                              frame_id);
             }
         }
