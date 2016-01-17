@@ -67,8 +67,8 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.header.frame_id = frame_id;
     scan_count++;
 
-    bool reverse = (angle_max > angle_min);
-    if ( reverse ) {
+    bool reversed = (angle_max > angle_min);
+    if ( reversed ) {
       scan_msg.angle_min =  M_PI - angle_max;
       scan_msg.angle_max =  M_PI - angle_min;
     } else {
@@ -86,7 +86,8 @@ void publish_scan(ros::Publisher *pub,
 
     scan_msg.intensities.resize(node_count);
     scan_msg.ranges.resize(node_count);
-    if (!inverted) { // assumes scan window at the top
+    bool reverse_data = (!inverted && reversed) || (inverted && !reversed);
+    if (!reverse_data) {
         for (size_t i = 0; i < node_count; i++) {
             float read_value = (float) nodes[i].distance_q2/4.0f/1000;
             if (read_value == 0.0)
@@ -104,10 +105,6 @@ void publish_scan(ros::Publisher *pub,
                 scan_msg.ranges[node_count-1-i] = read_value;
             scan_msg.intensities[node_count-1-i] = (float) (nodes[i].sync_quality >> 2);
         }
-    }
-    if ( reverse ) {
-      std::reverse(scan_msg.ranges.begin(), scan_msg.ranges.end());
-      std::reverse(scan_msg.intensities.begin(), scan_msg.intensities.end());
     }
 
     pub->publish(scan_msg);
