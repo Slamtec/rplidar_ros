@@ -1,7 +1,13 @@
 /*
- * Copyright (c) 2014, RoboPeak
- * All rights reserved.
+ *  RPLIDAR ROS NODE
  *
+ *  Copyright (c) 2009 - 2014 RoboPeak Team
+ *  http://www.robopeak.com
+ *  Copyright (c) 2014 - 2016 Shanghai Slamtec Co., Ltd.
+ *  http://www.slamtec.com
+ *
+ */
+/*
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
@@ -25,23 +31,11 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-/*
- *  RoboPeak LIDAR System
- *  RPlidar ROS Node
- *
- *  Copyright 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *
- */
-
-
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "std_srvs/Empty.h"
-#include <algorithm>
-
-#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
+#include "rplidar.h"
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -80,7 +74,6 @@ void publish_scan(ros::Publisher *pub,
 
     scan_msg.scan_time = scan_time;
     scan_msg.time_increment = scan_time / (double)(node_count-1);
-
     scan_msg.range_min = 0.15;
     scan_msg.range_max = 6.;
 
@@ -135,10 +128,10 @@ bool checkRPLIDARHealth(RPlidarDriver * drv)
 }
 
 bool stop_motor(std_srvs::Empty::Request &req,
-				std_srvs::Empty::Response &res)
+                               std_srvs::Empty::Response &res)
 {
   if(!drv)
-	return false;
+       return false;
 
   ROS_DEBUG("Stop motor");
   drv->stop();
@@ -147,16 +140,15 @@ bool stop_motor(std_srvs::Empty::Request &req,
 }
 
 bool start_motor(std_srvs::Empty::Request &req,
-				std_srvs::Empty::Response &res)
+                               std_srvs::Empty::Response &res)
 {
   if(!drv)
-	return false;
+       return false;
   ROS_DEBUG("Start motor");
   drv->startMotor();
   drv->startScan();;
   return true;
 }
-
 
 int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
@@ -175,11 +167,11 @@ int main(int argc, char * argv[]) {
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, "false");
     nh_private.param<bool>("angle_compensate", angle_compensate, "true");
-	
+
     u_result     op_result;
-   
+
     // create the driver instance
-	drv = RPlidarDriver::CreateDriver(RPlidarDriver::DRIVER_TYPE_SERIALPORT);
+    drv = RPlidarDriver::CreateDriver(RPlidarDriver::DRIVER_TYPE_SERIALPORT);
     
     if (!drv) {
         fprintf(stderr, "Create Driver fail, exit\n");
@@ -200,11 +192,10 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
+    ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
+    ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
 
-	ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
-	ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
-	
-    // start scan...
+    drv->startMotor();
     drv->startScan();
 
     ros::Time start_scan_time;
@@ -280,8 +271,10 @@ int main(int argc, char * argv[]) {
 
         ros::spinOnce();
     }
-	
+
     // done!
-	RPlidarDriver::DisposeDriver(drv);
+    drv->stop();
+    drv->stopMotor();
+    RPlidarDriver::DisposeDriver(drv);
     return 0;
 }
