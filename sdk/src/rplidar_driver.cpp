@@ -489,6 +489,9 @@ u_result RPlidarDriverSerialImpl::_cacheCapsuledScanData()
             if (ans != RESULT_OPERATION_TIMEOUT && ans != RESULT_INVALID_DATA) {
                 _isScanning = false;
                 return RESULT_OPERATION_FAIL;
+            } else {
+                // current data is invalid, do not use it.
+                continue;
             }
         }
 

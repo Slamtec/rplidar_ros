@@ -102,9 +102,6 @@ bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
         return false;
     }
 
-    //Clear the DTR bit to let the motor spin
-    clearDTR();
-
     if (!SetCommTimeouts(_serial_handle, &_co))
     {
         close();
@@ -125,6 +122,10 @@ bool raw_serial::open(const char * portname, _u32 baudrate, _u32 flags)
 
     Sleep(30); 
     _is_serial_opened = true;
+
+    //Clear the DTR bit set DTR=high
+    clearDTR();
+
     return true;
 }
 

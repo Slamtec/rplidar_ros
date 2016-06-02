@@ -122,10 +122,11 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
         return false;
     }
 
+    _is_serial_opened = true;
+
     //Clear the DTR bit to let the motor spin
     clearDTR();
     
-    _is_serial_opened = true;
     return true;
 }
 
