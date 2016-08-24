@@ -39,3 +39,5 @@
 #include "rplidar_cmd.h"
 
 #include "rplidar_driver.h"
+
+#define RPLIDAR_SDK_VERSION  "1.5.5"

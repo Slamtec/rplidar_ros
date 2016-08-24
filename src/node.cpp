@@ -103,6 +103,36 @@ void publish_scan(ros::Publisher *pub,
     pub->publish(scan_msg);
 }
 
+bool getRPLIDARDeviceInfo(RPlidarDriver * drv)
+{
+    u_result     op_result;
+    rplidar_response_device_info_t devinfo;
+
+    op_result = drv->getDeviceInfo(devinfo);
+    if (IS_FAIL(op_result)) {
+        if (op_result == RESULT_OPERATION_TIMEOUT) {
+            fprintf(stderr, "Error, operation time out.\n");
+        } else {
+            fprintf(stderr, "Error, unexpected error, code: %x\n", op_result);
+        }
+        return false;
+    }
+
+    // print out the device serial number, firmware and hardware version number..
+    printf("RPLIDAR S/N: ");
+    for (int pos = 0; pos < 16 ;++pos) {
+        printf("%02X", devinfo.serialnum[pos]);
+    }
+
+    printf("\n"
+           "Firmware Ver: %d.%02d\n"
+           "Hardware Rev: %d\n"
+           , devinfo.firmware_version>>8
+           , devinfo.firmware_version & 0xFF
+           , (int)devinfo.hardware_version);
+    return true;
+}
+
 bool checkRPLIDARHealth(RPlidarDriver * drv)
 {
     u_result     op_result;
@@ -168,6 +198,9 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, true);
 
+    printf("RPLIDAR running on ROS package rplidar_ros\n"
+           "SDK Version: "RPLIDAR_SDK_VERSION"\n");
+
     u_result     op_result;
 
     // create the driver instance
@@ -183,6 +216,11 @@ int main(int argc, char * argv[]) {
         fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
             , serial_port.c_str());
         RPlidarDriver::DisposeDriver(drv);
+        return -1;
+    }
+
+    // get rplidar device info
+    if (!getRPLIDARDeviceInfo(drv)) {
         return -1;
     }
 

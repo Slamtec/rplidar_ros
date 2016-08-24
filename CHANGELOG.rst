@@ -4,6 +4,13 @@ Changelog for package rplidar_ros
 
 Forthcoming
 -----------
+1.5.5 (2016-08-23)
+------------------
+* Release 1.5.5.
+* Update RPLIDAR SDK to 1.5.5
+* Add RPLIDAR information print, and fix the standard motor speed of RPLIDAR A2.
+* Contributors: kint
+
 1.5.4 (2016-06-02)
 ------------------
 * Release 1.5.4.
