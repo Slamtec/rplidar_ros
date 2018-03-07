@@ -247,7 +247,7 @@ int main(int argc, char * argv[]) {
         start_scan_time = ros::Time::now();
         op_result = drv->grabScanData(nodes, count);
         end_scan_time = ros::Time::now();
-        scan_duration = (end_scan_time - start_scan_time).toSec() * 1e-3;
+        scan_duration = (end_scan_time - start_scan_time).toSec();
 
         if (op_result == RESULT_OK) {
             op_result = drv->ascendScanData(nodes, count);
