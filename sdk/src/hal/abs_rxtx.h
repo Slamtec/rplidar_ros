@@ -34,7 +34,7 @@
 
 #pragma once 
 
-#include "rptypes.h"
+#include "hal/types.h"
 
 namespace rp{ namespace hal{
 
@@ -71,6 +71,7 @@ public:
 
     virtual void setDTR() = 0;
     virtual void clearDTR() = 0;
+    virtual void cancelOperation() {}
 
     virtual bool isOpened()
     {

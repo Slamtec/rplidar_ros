@@ -41,6 +41,34 @@
 
 namespace rp { namespace standalone{ namespace rplidar {
 
+struct RplidarScanMode {
+    _u16    id;
+    float    us_per_sample;   // microseconds per sample
+    float    max_distance;    // max distance
+    _u8     ans_type;         // the answer type of the scam mode, its value should be RPLIDAR_ANS_TYPE_MEASUREMENT*
+    char    scan_mode[64];    // name of scan mode, max 63 characters
+};
+
+enum {
+    DRIVER_TYPE_SERIALPORT = 0x0,
+    DRIVER_TYPE_TCP = 0x1,
+};
+
+class ChannelDevice
+{
+public:
+    virtual bool bind(const char*, uint32_t ) = 0;
+    virtual bool open() {return true;}
+    virtual void close() = 0;
+    virtual void flush() {return;}
+    virtual bool waitfordata(size_t data_count,_u32 timeout = -1, size_t * returned_size = NULL) = 0;
+    virtual int senddata(const _u8 * data, size_t size) = 0;
+    virtual int recvdata(unsigned char * data, size_t size) = 0;
+    virtual void setDTR() {return;}
+    virtual void clearDTR() {return;}
+    virtual void ReleaseRxTx() {return;}
+};
+
 class RPlidarDriver {
 public:
     enum {
@@ -48,8 +76,13 @@ public:
     };
 
     enum {
-        DRIVER_TYPE_SERIALPORT = 0x0,
+        MAX_SCAN_NODES = 8192,
     };
+
+    enum {
+        LEGACY_SAMPLE_DURATION = 476,
+    };
+
 public:
     /// Create an RPLIDAR Driver Instance
     /// This interface should be invoked first before any other operations
@@ -62,7 +95,6 @@ public:
     static void DisposeDriver(RPlidarDriver * drv);
 
 
-public:
     /// Open the specified serial port and connect to a target RPLIDAR device
     ///
     /// \param port_path     the device path of the serial port 
@@ -74,7 +106,7 @@ public:
     ///
     /// \param flag          other flags
     ///        Reserved for future use, always set to Zero
-    virtual u_result connect(const char * port_path, _u32 baudrate, _u32 flag = 0) = 0;
+    virtual u_result connect(const char *, _u32, _u32 flag = 0) = 0;
 
 
     /// Disconnect with the RPLIDAR and close the serial port
@@ -88,6 +120,25 @@ public:
     ///
     //  \param timeout       The operation timeout value (in millisecond) for the serial port communication                     
     virtual u_result reset(_u32 timeout = DEFAULT_TIMEOUT) = 0;
+
+    // FW1.24
+    /*
+    * @brief Get all scan modes that supported by lidar
+    */
+    virtual u_result getAllSupportedScanModes(std::vector<RplidarScanMode>& outModes, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result getTypicalScanMode(_u16& outMode, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result checkSupportConfigCommands(bool& outSupport, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+
+    virtual u_result getScanModeCount(_u16& modeCount, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result getLidarSampleDuration(float& sampleDurationRes, _u16 scanModeID, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result getMaxDistance(float &maxDistance, _u16 scanModeID, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result getScanModeAnsType(_u8 &ansType, _u16 scanModeID, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+    virtual u_result getScanModeName(char* modeName, _u16 scanModeID, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
+
+    virtual u_result getLidarConf(_u32 type, std::vector<_u8> &outputBuf, const std::vector<_u8> &reserve = std::vector<_u8>(), _u32 timeout = DEFAULT_TIMEOUT) = 0;
+
+    virtual u_result startScan(bool force, bool useTypicalScan, _u32 options = 0, RplidarScanMode* outUsedScanMode = NULL) = 0;
+    virtual u_result startScanExpress(bool force, _u16 scanMode, _u32 options = 0, RplidarScanMode* outUsedScanMode = NULL, _u32 timeout = DEFAULT_TIMEOUT) = 0;
 
     /// Retrieve the health status of the RPLIDAR
     /// The host system can use this operation to check whether RPLIDAR is in the self-protection mode.
@@ -152,10 +203,9 @@ public:
     /// \param autoExpressMode Force the core system to trying express mode first, if the system does not support express mode, it will use normal mode.
     ///
     /// \param timeout       The operation timeout value (in millisecond) for the serial port communication.
-    virtual u_result startScan(bool force = false, bool autoExpressMode = true) = 0;
+    
     virtual u_result startScanNormal(bool force, _u32 timeout = DEFAULT_TIMEOUT) = 0;
-    virtual u_result startScanExpress(bool fixedAngle, _u32 timeout = DEFAULT_TIMEOUT) = 0;
-
+    
     /// Check whether the device support express mode.
     /// 
     /// \param support       Return the result.
@@ -186,7 +236,7 @@ public:
     /// The interface will return RESULT_OPERATION_TIMEOUT to indicate that no complete 360-degrees' scan can be retrieved withing the given timeout duration. 
     ///
     /// \The caller application can set the timeout value to Zero(0) to make this interface always returns immediately to achieve non-block operation.
-	virtual u_result grabScanData(rplidar_response_measurement_node_t * nodebuffer, size_t & count, _u32 timeout = DEFAULT_TIMEOUT) = 0;
+    virtual u_result grabScanData(rplidar_response_measurement_node_t * nodebuffer, size_t & count, _u32 timeout = DEFAULT_TIMEOUT) = 0;
 
     /// Ascending the scan data according to the angle value in the scan.
     ///
@@ -197,10 +247,24 @@ public:
     /// The interface will return RESULT_OPERATION_FAIL when all the scan data is invalid. 
     virtual u_result ascendScanData(rplidar_response_measurement_node_t * nodebuffer, size_t count) = 0;
 
-protected:
-    RPlidarDriver() {}
+
+    /// \param nodebuffer     Buffer provided by the caller application to store the scan data
+    ///
+    /// \param count          Once the interface returns, this parameter will store the actual received data count.
+    ///
+    /// The interface will return RESULT_OPERATION_TIMEOUT to indicate that not even a single node can be retrieved since last call. 
+    
+    virtual u_result getScanDataWithInterval(rplidar_response_measurement_node_t * nodebuffer, size_t & count) = 0;
+    
     virtual ~RPlidarDriver() {}
+protected:
+    RPlidarDriver(){}
+
+public:
+    ChannelDevice* _chanDev;
 };
+
+
 
 
 }}}

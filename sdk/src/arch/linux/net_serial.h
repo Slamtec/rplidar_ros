@@ -67,6 +67,9 @@ public:
     virtual void clearDTR();
 
     _u32 getTermBaudBitmap(_u32 baud);
+
+    virtual void cancelOperation();
+
 protected:
     bool open(const char * portname, uint32_t baudrate, uint32_t flags = 0);
     void _init();
@@ -79,6 +82,9 @@ protected:
 
     size_t required_tx_cnt;
     size_t required_rx_cnt;
+
+    int    _selfpipe[2];
+    bool   _operation_aborted;
 };
 
 }}}

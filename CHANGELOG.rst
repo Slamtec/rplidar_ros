@@ -4,6 +4,14 @@ Changelog for package rplidar_ros
 
 Forthcoming
 -----------
+1.6.0 (2018-05-21)
+------------------
+* Release 1.6.0.
+* Update RPLIDAR SDK to 1.6.0
+* Support new product RPLIDAR A3(default 16K model and max_distance 25m)
+* Contributors: kint
+
+
 1.5.7 (2016-12-15)
 ------------------
 * Release 1.5.7.

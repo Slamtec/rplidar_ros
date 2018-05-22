@@ -34,7 +34,7 @@
 
 #pragma once
 
-#include "rptypes.h"
+#include "hal/types.h"
 
 #include <unistd.h>
 static inline void delay(_word_size_t ms){

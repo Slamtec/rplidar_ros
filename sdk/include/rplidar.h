@@ -34,10 +34,11 @@
 
 #pragma once
 
-#include "rptypes.h"
+#include <vector>
+#include "hal/types.h"
 #include "rplidar_protocol.h"
 #include "rplidar_cmd.h"
 
 #include "rplidar_driver.h"
 
-#define RPLIDAR_SDK_VERSION  "1.5.7"
+#define RPLIDAR_SDK_VERSION  "1.6.0"

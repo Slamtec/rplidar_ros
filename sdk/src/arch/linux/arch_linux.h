@@ -60,5 +60,5 @@
 #include <sys/select.h>
 #include <time.h>
 
-#include "arch/linux/timer.h"
+#include "timer.h"
 
