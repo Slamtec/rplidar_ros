@@ -233,9 +233,11 @@ int main(int argc, char * argv[]) {
     {
         //default frequent is 10 hz (by motor pwm value),  current_scan_mode.us_per_sample is the number of scan point per us
         angle_compensate_multiple = (int)(1000*1000/current_scan_mode.us_per_sample/10.0/360.0);
+        if(angle_compensate_multiple < 1) 
+          angle_compensate_multiple = 1;
         max_distance = current_scan_mode.max_distance;
-        ROS_INFO("current scan mode: %s, max_distance: %.1f m, Point number: %.1fK ",  current_scan_mode.scan_mode,
-                 current_scan_mode.max_distance, (1000/current_scan_mode.us_per_sample));
+        ROS_INFO("current scan mode: %s, max_distance: %.1f m, Point number: %.1fK , angle_compensate: %d",  current_scan_mode.scan_mode,
+                 current_scan_mode.max_distance, (1000/current_scan_mode.us_per_sample), angle_compensate_multiple);
     }
     else
     {
