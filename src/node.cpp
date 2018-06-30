@@ -184,6 +184,7 @@ int main(int argc, char * argv[]) {
     bool angle_compensate = true;
     float max_distance = 8.0;
     int angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
+    std::string scan_mode;
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
@@ -192,6 +193,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
+    nh_private.param<std::string>("scan_mode", scan_mode, std::string());
 
     ROS_INFO("RPLIDAR running on ROS package rplidar_ros. SDK Version:"RPLIDAR_SDK_VERSION"");
 
@@ -227,9 +229,37 @@ int main(int argc, char * argv[]) {
     ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
 
     drv->startMotor();
+
     RplidarScanMode current_scan_mode;
-    op_result = drv->startScan(0,1,0, &current_scan_mode);
-    if(op_result != RESULT_INVALID_DATA)
+    if (scan_mode.empty()) {
+        op_result = drv->startScan(false /* not force scan */, true /* use typical scan mode */, 0, &current_scan_mode);
+    } else {
+        std::vector<RplidarScanMode> allSupportedScanModes;
+        op_result = drv->getAllSupportedScanModes(allSupportedScanModes);
+
+        if (IS_OK(op_result)) {
+            _u16 selectedScanMode = _u16(-1);
+            for (std::vector<RplidarScanMode>::iterator iter = allSupportedScanModes.begin(); iter != allSupportedScanModes.end(); iter++) {
+                if (iter->scan_mode == scan_mode) {
+                    selectedScanMode = iter->id;
+                    break;
+                }
+            }
+
+            if (selectedScanMode == _u16(-1)) {
+                ROS_ERROR("scan mode `%s' is not supported by lidar, supported modes:", scan_mode.c_str());
+                for (std::vector<RplidarScanMode>::iterator iter = allSupportedScanModes.begin(); iter != allSupportedScanModes.end(); iter++) {
+                    ROS_ERROR("\t%s: max_distance: %.1f m, Point number: %.1fK",  iter->scan_mode,
+                            iter->max_distance, (1000/iter->us_per_sample));
+                }
+                op_result = RESULT_OPERATION_FAIL;
+            } else {
+                op_result = drv->startScanExpress(false /* not force scan */, selectedScanMode, 0, &current_scan_mode);
+            }
+        }
+    }
+
+    if(IS_OK(op_result))
     {
         //default frequent is 10 hz (by motor pwm value),  current_scan_mode.us_per_sample is the number of scan point per us
         angle_compensate_multiple = (int)(1000*1000/current_scan_mode.us_per_sample/10.0/360.0);
@@ -241,7 +271,7 @@ int main(int argc, char * argv[]) {
     }
     else
     {
-        ROS_ERROR("Can not start scan: RESULT_INVALID_DATA!");
+        ROS_ERROR("Can not start scan: %08x!", op_result);
     }
 
     ros::Time start_scan_time;
