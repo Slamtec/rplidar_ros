@@ -48,7 +48,7 @@ using namespace rp::standalone::rplidar;
 RPlidarDriver * drv = NULL;
 
 void publish_scan(ros::Publisher *pub,
-                  rplidar_response_measurement_node_t *nodes,
+                  rplidar_response_measurement_node_hq_t *nodes,
                   size_t node_count, ros::Time start,
                   double scan_time, bool inverted,
                   float angle_min, float angle_max,
@@ -83,21 +83,21 @@ void publish_scan(ros::Publisher *pub,
     bool reverse_data = (!inverted && reversed) || (inverted && !reversed);
     if (!reverse_data) {
         for (size_t i = 0; i < node_count; i++) {
-            float read_value = (float) nodes[i].distance_q2/4.0f/1000;
+            float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
             if (read_value == 0.0)
                 scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
             else
                 scan_msg.ranges[i] = read_value;
-            scan_msg.intensities[i] = (float) (nodes[i].sync_quality >> 2);
+            scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
         }
     } else {
         for (size_t i = 0; i < node_count; i++) {
-            float read_value = (float)nodes[i].distance_q2/4.0f/1000;
+            float read_value = (float)nodes[i].dist_mm_q2/4.0f/1000;
             if (read_value == 0.0)
                 scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
             else
                 scan_msg.ranges[node_count-1-i] = read_value;
-            scan_msg.intensities[node_count-1-i] = (float) (nodes[i].sync_quality >> 2);
+            scan_msg.intensities[node_count-1-i] = (float) (nodes[i].quality >> 2);
         }
     }
 
@@ -172,6 +172,11 @@ bool start_motor(std_srvs::Empty::Request &req,
   drv->startMotor();
   drv->startScan(0,1);
   return true;
+}
+
+static float getAngle(const rplidar_response_measurement_node_hq_t& node)
+{
+    return node.angle_z_q14 * 90.f / 16384.f;
 }
 
 int main(int argc, char * argv[]) {
@@ -278,11 +283,11 @@ int main(int argc, char * argv[]) {
     ros::Time end_scan_time;
     double scan_duration;
     while (ros::ok()) {
-        rplidar_response_measurement_node_t nodes[360*8];
+        rplidar_response_measurement_node_hq_t nodes[360*8];
         size_t   count = _countof(nodes);
 
         start_scan_time = ros::Time::now();
-        op_result = drv->grabScanData(nodes, count);
+        op_result = drv->grabScanDataHq(nodes, count);
         end_scan_time = ros::Time::now();
         scan_duration = (end_scan_time - start_scan_time).toSec();
 
@@ -295,13 +300,13 @@ int main(int argc, char * argv[]) {
                     //const int angle_compensate_multiple = 1;
                     const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                     int angle_compensate_offset = 0;
-                    rplidar_response_measurement_node_t angle_compensate_nodes[angle_compensate_nodes_count];
-                    memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_t));
+                    rplidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
+                    memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_hq_t));
 
                     int i = 0, j = 0;
                     for( ; i < count; i++ ) {
-                        if (nodes[i].distance_q2 != 0) {
-                            float angle = (float)((nodes[i].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+                        if (nodes[i].dist_mm_q2 != 0) {
+                            float angle = getAngle(nodes[i]);
                             int angle_value = (int)(angle * angle_compensate_multiple);
                             if ((angle_value - angle_compensate_offset) < 0) angle_compensate_offset = angle_value;
                             for (j = 0; j < angle_compensate_multiple; j++) {
@@ -318,14 +323,14 @@ int main(int argc, char * argv[]) {
                     int start_node = 0, end_node = 0;
                     int i = 0;
                     // find the first valid node and last valid node
-                    while (nodes[i++].distance_q2 == 0);
+                    while (nodes[i++].dist_mm_q2 == 0);
                     start_node = i-1;
                     i = count -1;
-                    while (nodes[i--].distance_q2 == 0);
+                    while (nodes[i--].dist_mm_q2 == 0);
                     end_node = i+1;
 
-                    angle_min = DEG2RAD((float)(nodes[start_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
-                    angle_max = DEG2RAD((float)(nodes[end_node].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f);
+                    angle_min = DEG2RAD(getAngle(nodes[start_node]));
+                    angle_max = DEG2RAD(getAngle(nodes[end_node]));
 
                     publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1,
                              start_scan_time, scan_duration, inverted,

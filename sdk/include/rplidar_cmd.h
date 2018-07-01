@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2016 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -181,6 +181,14 @@ typedef struct _rplidar_response_ultra_capsule_measurement_nodes_t {
     _u16                            start_angle_sync_q6;
     rplidar_response_ultra_cabin_nodes_t  ultra_cabins[32];
 } __attribute__((packed)) rplidar_response_ultra_capsule_measurement_nodes_t;
+
+typedef struct rplidar_response_measurement_node_hq_t {
+    _u16   angle_z_q14; 
+    _u32   dist_mm_q2; 
+    _u8    quality;  
+    _u8    flag;
+} __attribute__((packed)) rplidar_response_measurement_node_hq_t;
+
 #   define RPLIDAR_CONF_SCAN_COMMAND_STD            0
 #   define RPLIDAR_CONF_SCAN_COMMAND_EXPRESS        1
 #   define RPLIDAR_CONF_SCAN_COMMAND_HQ             2
@@ -199,10 +207,12 @@ typedef struct _rplidar_response_ultra_capsule_measurement_nodes_t {
 #define RPLIDAR_CONF_SCAN_MODE_NAME                 0x0000007F
 #define RPLIDAR_EXPRESS_SCAN_STABILITY_BITMAP                 4
 #define RPLIDAR_EXPRESS_SCAN_SENSITIVITY_BITMAP               5
+
 typedef struct _rplidar_response_get_lidar_conf{
     _u32 type;
     _u8  payload[0];
 }__attribute__((packed)) rplidar_response_get_lidar_conf_t;
+
 typedef struct _rplidar_response_set_lidar_conf{
     _u32 result;
 }__attribute__((packed)) rplidar_response_set_lidar_conf_t;

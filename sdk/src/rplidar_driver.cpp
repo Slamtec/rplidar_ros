@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2016 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -45,11 +45,28 @@
 #include "rplidar_driver_serial.h"
 #include "rplidar_driver_TCP.h"
 
+#include <algorithm>
+
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
 namespace rp { namespace standalone{ namespace rplidar {
+
+static void convert(const rplidar_response_measurement_node_t& from, rplidar_response_measurement_node_hq_t& to)
+{
+    to.angle_z_q14 = (((from.angle_q6_checkbit) >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) << 8) / 90;  //transfer to q14 Z-angle
+    to.dist_mm_q2 = from.distance_q2;
+    to.flag = (from.sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT);  // trasfer syncbit to HQ flag field
+    to.quality = (from.sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;  //remove the last two bits and then make quality from 0-63 to 0-255
+}
+
+static void convert(const rplidar_response_measurement_node_hq_t& from, rplidar_response_measurement_node_t& to)
+{
+    to.sync_quality = (from.flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) | ((from.quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
+    to.angle_q6_checkbit = 1 | (((from.angle_z_q14 * 90) >> 8) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT);
+    to.distance_q2 = from.dist_mm_q2 > _u16(-1) ? _u16(0) : _u16(from.dist_mm_q2);
+}
 
 // Factory Impl
 RPlidarDriver * RPlidarDriver::CreateDriver(_u32 drivertype)
@@ -76,8 +93,8 @@ RPlidarDriverImplCommon::RPlidarDriverImplCommon()
     , _isScanning(false)
     , _isSupportingMotorCtrl(false)
 {
-    _cached_scan_node_count = 0;
-    _cached_scan_node_count_for_interval_retrieve = 0;
+    _cached_scan_node_hq_count = 0;
+    _cached_scan_node_hq_count_for_interval_retrieve = 0;
     _cached_sampleduration_std = LEGACY_SAMPLE_DURATION;
     _cached_sampleduration_express = LEGACY_SAMPLE_DURATION;
 }
@@ -239,6 +256,13 @@ u_result RPlidarDriverImplCommon::getFrequency(bool inExpressMode, size_t count,
         is4kmode = false;
     }
 
+    return RESULT_OK;
+}
+
+u_result RPlidarDriverImplCommon::getFrequency(const RplidarScanMode& scanMode, size_t count, float & frequency)
+{
+    float sample_duration = scanMode.us_per_sample;
+    frequency = 1000000.0f / (count * sample_duration);
     return RESULT_OK;
 }
 
@@ -495,7 +519,7 @@ u_result RPlidarDriverImplCommon::_cacheScanData()
 {
     rplidar_response_measurement_node_t      local_buf[128];
     size_t                                   count = 128;
-    rplidar_response_measurement_node_t      local_scan[MAX_SCAN_NODES];
+    rplidar_response_measurement_node_hq_t   local_scan[MAX_SCAN_NODES];
     size_t                                   scan_count = 0;
     u_result                                 ans;
     memset(local_scan, 0, sizeof(local_scan));
@@ -517,23 +541,26 @@ u_result RPlidarDriverImplCommon::_cacheScanData()
             {
                 // only publish the data when it contains a full 360 degree scan 
                 
-                if ((local_scan[0].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
+                if ((local_scan[0].flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
                     _lock.lock();
-                    memcpy(_cached_scan_node_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_t));
-                    _cached_scan_node_count = scan_count;
+                    memcpy(_cached_scan_node_hq_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_hq_t));
+                    _cached_scan_node_hq_count = scan_count;
                     _dataEvt.set();
                     _lock.unlock();
                 }
                 scan_count = 0;
             }
-            local_scan[scan_count++] = local_buf[pos];
+
+            rplidar_response_measurement_node_hq_t nodeHq;
+            convert(local_buf[pos], nodeHq);
+            local_scan[scan_count++] = nodeHq;
             if (scan_count == _countof(local_scan)) scan_count-=1; // prevent overflow
 
             //for interval retrieve
             {
                 rp::hal::AutoLocker l(_lock);
-                _cached_scan_node_buf_for_interval_retrieve[_cached_scan_node_count_for_interval_retrieve++] = local_buf[pos];
-                if(_cached_scan_node_count_for_interval_retrieve == _countof(_cached_scan_node_buf_for_interval_retrieve)) _cached_scan_node_count_for_interval_retrieve-=1; // prevent overflow
+                _cached_scan_node_hq_buf_for_interval_retrieve[_cached_scan_node_hq_count_for_interval_retrieve++] = nodeHq;
+                if(_cached_scan_node_hq_count_for_interval_retrieve == _countof(_cached_scan_node_hq_buf_for_interval_retrieve)) _cached_scan_node_hq_count_for_interval_retrieve-=1; // prevent overflow
             }
         }
     }
@@ -604,9 +631,9 @@ u_result RPlidarDriverImplCommon::checkExpressScanSupported(bool & support, _u32
 u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
 {
     rplidar_response_capsule_measurement_nodes_t    capsule_node;
-    rplidar_response_measurement_node_t      local_buf[128];
+    rplidar_response_measurement_node_hq_t   local_buf[128];
     size_t                                   count = 128;
-    rplidar_response_measurement_node_t      local_scan[MAX_SCAN_NODES];
+    rplidar_response_measurement_node_hq_t   local_scan[MAX_SCAN_NODES];
     size_t                                   scan_count = 0;
     u_result                                 ans;
     memset(local_scan, 0, sizeof(local_scan));
@@ -632,14 +659,14 @@ u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
 
         for (size_t pos = 0; pos < count; ++pos)
         {
-            if (local_buf[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)
+            if (local_buf[pos].flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)
             {
                 // only publish the data when it contains a full 360 degree scan 
                 
-                if ((local_scan[0].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
+                if ((local_scan[0].flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
                     _lock.lock();
-                    memcpy(_cached_scan_node_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_t));
-                    _cached_scan_node_count = scan_count;
+                    memcpy(_cached_scan_node_hq_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_hq_t));
+                    _cached_scan_node_hq_count = scan_count;
                     _dataEvt.set();
                     _lock.unlock();
                 }
@@ -651,8 +678,8 @@ u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
             //for interval retrieve
             {
                 rp::hal::AutoLocker l(_lock);
-                _cached_scan_node_buf_for_interval_retrieve[_cached_scan_node_count_for_interval_retrieve++] = local_buf[pos];
-                if(_cached_scan_node_count_for_interval_retrieve == _countof(_cached_scan_node_buf_for_interval_retrieve)) _cached_scan_node_count_for_interval_retrieve-=1; // prevent overflow
+                _cached_scan_node_hq_buf_for_interval_retrieve[_cached_scan_node_hq_count_for_interval_retrieve++] = local_buf[pos];
+                if(_cached_scan_node_hq_count_for_interval_retrieve == _countof(_cached_scan_node_hq_buf_for_interval_retrieve)) _cached_scan_node_hq_count_for_interval_retrieve-=1; // prevent overflow
             }
         }
     }
@@ -664,9 +691,9 @@ u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
 u_result RPlidarDriverImplCommon::_cacheUltraCapsuledScanData()
 {
     rplidar_response_ultra_capsule_measurement_nodes_t    ultra_capsule_node;
-    rplidar_response_measurement_node_t      local_buf[128];
+    rplidar_response_measurement_node_hq_t   local_buf[128];
     size_t                                   count = 128;
-    rplidar_response_measurement_node_t      local_scan[MAX_SCAN_NODES];
+    rplidar_response_measurement_node_hq_t   local_scan[MAX_SCAN_NODES];
     size_t                                   scan_count = 0;
     u_result                                 ans;
     memset(local_scan, 0, sizeof(local_scan));
@@ -689,14 +716,14 @@ u_result RPlidarDriverImplCommon::_cacheUltraCapsuledScanData()
         
         for (size_t pos = 0; pos < count; ++pos)
         {
-            if (local_buf[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)
+            if (local_buf[pos].flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)
             {
                 // only publish the data when it contains a full 360 degree scan 
                 
-                if ((local_scan[0].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
+                if ((local_scan[0].flag & RPLIDAR_RESP_MEASUREMENT_SYNCBIT)) {
                     _lock.lock();
-                    memcpy(_cached_scan_node_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_t));
-                    _cached_scan_node_count = scan_count;
+                    memcpy(_cached_scan_node_hq_buf, local_scan, scan_count*sizeof(rplidar_response_measurement_node_hq_t));
+                    _cached_scan_node_hq_count = scan_count;
                     _dataEvt.set();
                     _lock.unlock();
                 }
@@ -708,8 +735,8 @@ u_result RPlidarDriverImplCommon::_cacheUltraCapsuledScanData()
             //for interval retrieve
             {
                 rp::hal::AutoLocker l(_lock);
-                _cached_scan_node_buf_for_interval_retrieve[_cached_scan_node_count_for_interval_retrieve++] = local_buf[pos];
-                if(_cached_scan_node_count_for_interval_retrieve == _countof(_cached_scan_node_buf_for_interval_retrieve)) _cached_scan_node_count_for_interval_retrieve-=1; // prevent overflow
+                _cached_scan_node_hq_buf_for_interval_retrieve[_cached_scan_node_hq_count_for_interval_retrieve++] = local_buf[pos];
+                if(_cached_scan_node_hq_count_for_interval_retrieve == _countof(_cached_scan_node_hq_buf_for_interval_retrieve)) _cached_scan_node_hq_count_for_interval_retrieve-=1; // prevent overflow
             }
         }
     }
@@ -719,7 +746,7 @@ u_result RPlidarDriverImplCommon::_cacheUltraCapsuledScanData()
     return RESULT_OK;
 }
 
-void     RPlidarDriverImplCommon::_capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_t *nodebuffer, size_t &nodeCount)
+void     RPlidarDriverImplCommon::_capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount)
 {
     nodeCount = 0;
     if (_is_previous_capsuledataRdy) {
@@ -760,13 +787,12 @@ void     RPlidarDriverImplCommon::_capsuleToNormal(const rplidar_response_capsul
                 if (angle_q6[cpos] < 0) angle_q6[cpos] += (360<<6);
                 if (angle_q6[cpos] >= (360<<6)) angle_q6[cpos] -= (360<<6);
 
-                rplidar_response_measurement_node_t node;
+                rplidar_response_measurement_node_hq_t node;
 
-                node.sync_quality = (syncBit[cpos] | ((!syncBit[cpos]) << 1));
-                if (dist_q2[cpos]) node.sync_quality |= (0x2F << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
-
-                node.angle_q6_checkbit = (1 | (angle_q6[cpos]<<1));
-                node.distance_q2 = dist_q2[cpos];
+                node.angle_z_q14 = _u16((angle_q6[cpos] << 8) / 90);
+                node.flag = (syncBit[cpos] | ((!syncBit[cpos]) << 1));
+                node.quality = dist_q2[cpos] ? (0x2f << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) : 0;
+                node.dist_mm_q2 = dist_q2[cpos];
 
                 nodebuffer[nodeCount++] = node;
              }
@@ -815,7 +841,7 @@ static _u32 _varbitscale_decode(_u32 scaled, _u32 & scaleLevel)
     return 0;
 }
 
-void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_t *nodebuffer, size_t &nodeCount)
+void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount)
 {
     nodeCount = 0;
     if (_is_previous_capsuledataRdy) {
@@ -897,13 +923,6 @@ void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra
 
                 syncBit[cpos] = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < angleInc_q16) ? 1 : 0;
 
-
-                rplidar_response_measurement_node_t node;
-
-                _u8 sync_quality_tmp = (syncBit[cpos] | ((!syncBit[cpos]) << 1));
-                if (dist_q2[cpos]) sync_quality_tmp |= (0x2F << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
-
-
                 const int offsetAngleMean_q16 = (int)(7.5 * 3.1415926535 * (1 << 16) / 180.0);
 
                 angle_q6[cpos] = ((currentAngle_raw_q16 - int(offsetAngleMean_q16 * 180 / 3.14159265)) >> 10);
@@ -912,9 +931,12 @@ void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra
                 if (angle_q6[cpos] < 0) angle_q6[cpos] += (360 << 6);
                 if (angle_q6[cpos] >= (360 << 6)) angle_q6[cpos] -= (360 << 6);
 
-                node.sync_quality = sync_quality_tmp;
-                node.angle_q6_checkbit = (1 | (angle_q6[cpos] << 1));
-                node.distance_q2 = dist_q2[cpos];
+                rplidar_response_measurement_node_hq_t node;
+
+                node.flag = (syncBit[cpos] | ((!syncBit[cpos]) << 1));
+                node.quality = dist_q2[cpos] ? (0x2F << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) : 0;
+                node.angle_z_q14 = _u16((angle_q6[cpos] << 8) / 90);
+                node.dist_mm_q2 = dist_q2[cpos];
 
                 nodebuffer[nodeCount++] = node;
             }
@@ -1371,7 +1393,7 @@ u_result RPlidarDriverImplCommon::startScanExpress(bool force, _u16 scanMode, _u
         rplidar_payload_express_scan_t scanReq;
         memset(&scanReq, 0, sizeof(scanReq));
         if (scanMode != RPLIDAR_CONF_SCAN_COMMAND_STD && scanMode != RPLIDAR_CONF_SCAN_COMMAND_EXPRESS)
-            scanReq.working_mode = scanMode;
+            scanReq.working_mode = _u8(scanMode);
         scanReq.working_flags = options;
         
         if (IS_FAIL(ans = _sendCommand(RPLIDAR_CMD_EXPRESS_SCAN, &scanReq, sizeof(scanReq)))) {
@@ -1440,17 +1462,46 @@ u_result RPlidarDriverImplCommon::grabScanData(rplidar_response_measurement_node
         return RESULT_OPERATION_TIMEOUT;
     case rp::hal::Event::EVENT_OK:
         {
-            if(_cached_scan_node_count == 0) return RESULT_OPERATION_TIMEOUT; //consider as timeout
+            if(_cached_scan_node_hq_count == 0) return RESULT_OPERATION_TIMEOUT; //consider as timeout
 
             rp::hal::AutoLocker l(_lock);
 
-            size_t size_to_copy = min(count, _cached_scan_node_count);
+            size_t size_to_copy = min(count, _cached_scan_node_hq_count);
 
-            memcpy(nodebuffer, _cached_scan_node_buf, size_to_copy*sizeof(rplidar_response_measurement_node_t));
+            for (size_t i = 0; i < size_to_copy; i++)
+                convert(_cached_scan_node_hq_buf[i], nodebuffer[i]);
+
             count = size_to_copy;
-            _cached_scan_node_count = 0;
+            _cached_scan_node_hq_count = 0;
         }
         return RESULT_OK;
+
+    default:
+        count = 0;
+        return RESULT_OPERATION_FAIL;
+    }
+}
+
+u_result RPlidarDriverImplCommon::grabScanDataHq(rplidar_response_measurement_node_hq_t * nodebuffer, size_t & count, _u32 timeout)
+{
+    switch (_dataEvt.wait(timeout))
+    {
+    case rp::hal::Event::EVENT_TIMEOUT:
+        count = 0;
+        return RESULT_OPERATION_TIMEOUT;
+    case rp::hal::Event::EVENT_OK:
+    {
+        if (_cached_scan_node_hq_count == 0) return RESULT_OPERATION_TIMEOUT; //consider as timeout
+
+        rp::hal::AutoLocker l(_lock);
+
+        size_t size_to_copy = min(count, _cached_scan_node_hq_count);
+        memcpy(nodebuffer, _cached_scan_node_hq_buf, size_to_copy * sizeof(rplidar_response_measurement_node_hq_t));
+
+        count = size_to_copy;
+        _cached_scan_node_hq_count = 0;
+    }
+    return RESULT_OK;
 
     default:
         count = 0;
@@ -1463,36 +1514,95 @@ u_result RPlidarDriverImplCommon::getScanDataWithInterval(rplidar_response_measu
     size_t size_to_copy = 0;
     {
         rp::hal::AutoLocker l(_lock);
-        if(_cached_scan_node_count_for_interval_retrieve == 0)
+        if(_cached_scan_node_hq_count_for_interval_retrieve == 0)
         {
             return RESULT_OPERATION_TIMEOUT; 
         }
         //copy all the nodes(_cached_scan_node_count_for_interval_retrieve nodes) in _cached_scan_node_buf_for_interval_retrieve
-        size_to_copy = _cached_scan_node_count_for_interval_retrieve;
-        memcpy(nodebuffer, _cached_scan_node_buf_for_interval_retrieve, size_to_copy * sizeof(rplidar_response_measurement_node_t));
-        _cached_scan_node_count_for_interval_retrieve = 0;
+        size_to_copy = _cached_scan_node_hq_count_for_interval_retrieve;
+        for (size_t i = 0; i < size_to_copy; i++)
+        {
+            convert(_cached_scan_node_hq_buf_for_interval_retrieve[i], nodebuffer[i]);
+        }
+        _cached_scan_node_hq_count_for_interval_retrieve = 0;
     }
     count = size_to_copy;
 
     return RESULT_OK;
 }
 
-u_result RPlidarDriverImplCommon::ascendScanData(rplidar_response_measurement_node_t * nodebuffer, size_t count)
+u_result RPlidarDriverImplCommon::getScanDataWithIntervalHq(rplidar_response_measurement_node_hq_t * nodebuffer, size_t & count)
 {
-    float inc_origin_angle = 360.0/count;
+    size_t size_to_copy = 0;
+    {
+        rp::hal::AutoLocker l(_lock);
+        if (_cached_scan_node_hq_count_for_interval_retrieve == 0)
+        {
+            return RESULT_OPERATION_TIMEOUT;
+        }
+        //copy all the nodes(_cached_scan_node_count_for_interval_retrieve nodes) in _cached_scan_node_buf_for_interval_retrieve
+        size_to_copy = _cached_scan_node_hq_count_for_interval_retrieve;
+        memcpy(nodebuffer, _cached_scan_node_hq_buf_for_interval_retrieve, size_to_copy * sizeof(rplidar_response_measurement_node_hq_t));
+        _cached_scan_node_hq_count_for_interval_retrieve = 0;
+    }
+    count = size_to_copy;
+
+    return RESULT_OK;
+}
+
+static inline float getAngle(const rplidar_response_measurement_node_t& node)
+{
+    return (node.angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.f;
+}
+
+static inline void setAngle(rplidar_response_measurement_node_t& node, float v)
+{
+    _u16 checkbit = node.angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
+    node.angle_q6_checkbit = (((_u16)(v * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) | checkbit;
+}
+
+static inline float getAngle(const rplidar_response_measurement_node_hq_t& node)
+{
+    return node.angle_z_q14 * 90.f / 16384.f;
+}
+
+static inline void setAngle(rplidar_response_measurement_node_hq_t& node, float v)
+{
+    node.angle_z_q14 = _u32(v * 16384.f / 90.f);
+}
+
+static inline _u16 getDistanceQ2(const rplidar_response_measurement_node_t& node)
+{
+    return node.distance_q2;
+}
+
+static inline _u32 getDistanceQ2(const rplidar_response_measurement_node_hq_t& node)
+{
+    return node.dist_mm_q2;
+}
+
+template <class TNode>
+static bool angleLessThan(const TNode& a, const TNode& b)
+{
+    return getAngle(a) < getAngle(b);
+}
+
+template < class TNode >
+static u_result ascendScanData_(TNode * nodebuffer, size_t count)
+{
+    float inc_origin_angle = 360.f/count;
     size_t i = 0;
 
     //Tune head
     for (i = 0; i < count; i++) {
-        if(nodebuffer[i].distance_q2 == 0) {
+        if(getDistanceQ2(nodebuffer[i]) == 0) {
             continue;
         } else {
             while(i != 0) {
                 i--;
-                float expect_angle = (nodebuffer[i+1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f - inc_origin_angle;
+                float expect_angle = getAngle(nodebuffer[i+1]) - inc_origin_angle;
                 if (expect_angle < 0.0f) expect_angle = 0.0f;
-                _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
-                nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+                setAngle(nodebuffer[i], expect_angle);
             }
             break;
         }
@@ -1503,43 +1613,43 @@ u_result RPlidarDriverImplCommon::ascendScanData(rplidar_response_measurement_no
 
     //Tune tail
     for (i = count - 1; i >= 0; i--) {
-        if(nodebuffer[i].distance_q2 == 0) {
+        if(getDistanceQ2(nodebuffer[i]) == 0) {
             continue;
         } else {
             while(i != (count - 1)) {
                 i++;
-                float expect_angle = (nodebuffer[i-1].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f + inc_origin_angle;
+                float expect_angle = getAngle(nodebuffer[i-1]) + inc_origin_angle;
                 if (expect_angle > 360.0f) expect_angle -= 360.0f;
-                _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
-                nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+                setAngle(nodebuffer[i], expect_angle);
             }
             break;
         }
     }
 
     //Fill invalid angle in the scan
-    float frontAngle = (nodebuffer[0].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f;
+    float frontAngle = getAngle(nodebuffer[0]);
     for (i = 1; i < count; i++) {
-        if(nodebuffer[i].distance_q2 == 0) {
+        if(getDistanceQ2(nodebuffer[i]) == 0) {
             float expect_angle =  frontAngle + i * inc_origin_angle;
             if (expect_angle > 360.0f) expect_angle -= 360.0f;
-            _u16 checkbit = nodebuffer[i].angle_q6_checkbit & RPLIDAR_RESP_MEASUREMENT_CHECKBIT;
-            nodebuffer[i].angle_q6_checkbit = (((_u16)(expect_angle * 64.0f)) << RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + checkbit;
+            setAngle(nodebuffer[i], expect_angle);
         }
     }
 
     // Reorder the scan according to the angle value
-    for (i = 0; i < (count-1); i++){
-        for (size_t j = (i+1); j < count; j++){
-            if(nodebuffer[i].angle_q6_checkbit > nodebuffer[j].angle_q6_checkbit){
-                rplidar_response_measurement_node_t temp = nodebuffer[i];
-                nodebuffer[i] = nodebuffer[j];
-                nodebuffer[j] = temp;
-            }
-        }
-    }
+    std::sort(nodebuffer, nodebuffer + count, &angleLessThan<TNode>);
 
     return RESULT_OK;
+}
+
+u_result RPlidarDriverImplCommon::ascendScanData(rplidar_response_measurement_node_t * nodebuffer, size_t count)
+{
+    return ascendScanData_<rplidar_response_measurement_node_t>(nodebuffer, count);
+}
+
+u_result RPlidarDriverImplCommon::ascendScanData(rplidar_response_measurement_node_hq_t * nodebuffer, size_t count)
+{
+    return ascendScanData_<rplidar_response_measurement_node_hq_t>(nodebuffer, count);
 }
 
 u_result RPlidarDriverImplCommon::_sendCommand(_u8 cmd, const void * payload, size_t payloadsize)
