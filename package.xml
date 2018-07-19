@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>rplidar_ros</name>
-  <version>1.6.0</version>
+  <version>1.7.0</version>
   <description>The rplidar ros package, support rplidar A2/A1 and A3</description>
 
   <maintainer email="ros@slamtec.com">Slamtec ROS Maintainer</maintainer>
