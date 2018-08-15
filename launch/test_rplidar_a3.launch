@@ -5,7 +5,8 @@
   <param name="frame_id"            type="string" value="laser"/>
   <param name="inverted"            type="bool"   value="false"/>
   <param name="angle_compensate"    type="bool"   value="true"/>
- 
+  <param name="scan_mode"           type="string" value="Sensitivity"/>
+
  </node>
   <node name="rplidarNodeClient"          pkg="rplidar_ros"  type="rplidarNodeClient" output="screen">
   </node>
