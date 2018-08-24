@@ -93,6 +93,9 @@ protected:
     virtual u_result _waitUltraCapsuledNode(rplidar_response_ultra_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
     virtual void     _ultraCapsuleToNormal(const rplidar_response_ultra_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 
+    virtual u_result  _cacheHqScanData();
+    virtual u_result _waitHqNode(rplidar_response_hq_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
+    virtual void     _HqToNormal(const rplidar_response_hq_capsule_measurement_nodes_t & node_hq, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 
     bool     _isConnected; 
     bool     _isScanning;
@@ -109,7 +112,10 @@ protected:
 
     rplidar_response_capsule_measurement_nodes_t _cached_previous_capsuledata;
     rplidar_response_ultra_capsule_measurement_nodes_t _cached_previous_ultracapsuledata;
+    rplidar_response_hq_capsule_measurement_nodes_t _cached_previous_Hqdata;
     bool                                         _is_previous_capsuledataRdy;
+    bool                                         _is_previous_HqdataRdy;
+	
 
     rp::hal::Locker         _lock;
     rp::hal::Event          _dataEvt;
