@@ -52,7 +52,7 @@ void publish_scan(ros::Publisher *pub,
                   size_t node_count, ros::Time start,
                   double scan_time, bool inverted,
                   float angle_min, float angle_max,
-                  float max_distance,
+                  float max_distance, float min_valid_distance,
                   std::string frame_id)
 {
     static int scan_count = 0;
@@ -84,7 +84,7 @@ void publish_scan(ros::Publisher *pub,
     if (!reverse_data) {
         for (size_t i = 0; i < node_count; i++) {
             float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
-            if (read_value == 0.0)
+            if (read_value == 0.0 || read_value < min_valid_distance)
                 scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
             else
                 scan_msg.ranges[i] = read_value;
@@ -93,7 +93,7 @@ void publish_scan(ros::Publisher *pub,
     } else {
         for (size_t i = 0; i < node_count; i++) {
             float read_value = (float)nodes[i].dist_mm_q2/4.0f/1000;
-            if (read_value == 0.0)
+            if (read_value == 0.0 || read_value < min_valid_distance)
                 scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
             else
                 scan_msg.ranges[node_count-1-i] = read_value;
@@ -190,6 +190,7 @@ int main(int argc, char * argv[]) {
     float max_distance = 8.0;
     int angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
     std::string scan_mode;
+    float min_valid_distance;
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
@@ -199,6 +200,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
+    nh_private.param<float>("min_valid_distance", min_valid_distance, 0.0);
 
     ROS_INFO("RPLIDAR running on ROS package rplidar_ros. SDK Version:"RPLIDAR_SDK_VERSION"");
 
@@ -317,7 +319,7 @@ int main(int argc, char * argv[]) {
   
                     publish_scan(&scan_pub, angle_compensate_nodes, angle_compensate_nodes_count,
                              start_scan_time, scan_duration, inverted,
-                             angle_min, angle_max, max_distance,
+                             angle_min, angle_max, max_distance, min_valid_distance,
                              frame_id);
                 } else {
                     int start_node = 0, end_node = 0;
@@ -334,7 +336,7 @@ int main(int argc, char * argv[]) {
 
                     publish_scan(&scan_pub, &nodes[start_node], end_node-start_node +1,
                              start_scan_time, scan_duration, inverted,
-                             angle_min, angle_max, max_distance,
+                             angle_min, angle_max, max_distance, min_valid_distance,
                              frame_id);
                }
             } else if (op_result == RESULT_OPERATION_FAIL) {
@@ -344,7 +346,7 @@ int main(int argc, char * argv[]) {
 
                 publish_scan(&scan_pub, nodes, count,
                              start_scan_time, scan_duration, inverted,
-                             angle_min, angle_max, max_distance,
+                             angle_min, angle_max, max_distance, min_valid_distance,
                              frame_id);
             }
         }
