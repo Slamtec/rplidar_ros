@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2019 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -132,6 +132,7 @@ public:
     ///  \param timeout       The operation timeout value (in millisecond) for the serial port communication                     
     virtual u_result reset(_u32 timeout = DEFAULT_TIMEOUT) = 0;
 
+    virtual u_result clearNetSerialRxCache() = 0;
     // FW1.24
     /// Get all scan modes that supported by lidar
     virtual u_result getAllSupportedScanModes(std::vector<RplidarScanMode>& outModes, _u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;

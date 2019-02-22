@@ -2,6 +2,12 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.0 (2019-02-22)
+------------------
+* Update RPLIDAR SDK to 1.10.0
+* [new feature] support Rplidar S1
+* Contributors: tony,WubinXia
+
 1.9.0 (2018-08-24)
 ------------------
 * Update RPLIDAR SDK to 1.9.0

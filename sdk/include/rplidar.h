@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2019 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -41,4 +41,4 @@
 
 #include "rplidar_driver.h"
 
-#define RPLIDAR_SDK_VERSION  "1.9.0"
+#define RPLIDAR_SDK_VERSION  "1.10.0"
