@@ -181,8 +181,11 @@ static float getAngle(const rplidar_response_measurement_node_hq_t& node)
 
 int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
-
+    
+    std::string channel_type;
+    std::string tcp_ip;
     std::string serial_port;
+    int tcp_port = 20108;
     int serial_baudrate = 115200;
     std::string frame_id;
     bool inverted = false;
@@ -193,6 +196,9 @@ int main(int argc, char * argv[]) {
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
+    nh_private.param<std::string>("channel_type", channel_type, "serial");
+    nh_private.param<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
+    nh_private.param<int>("tcp_port", tcp_port, 20108);
     nh_private.param<std::string>("serial_port", serial_port, "/dev/ttyUSB0"); 
     nh_private.param<int>("serial_baudrate", serial_baudrate, 115200/*256000*/);//ros run for A1 A2, change to 256000 if A3
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
@@ -205,20 +211,38 @@ int main(int argc, char * argv[]) {
     u_result     op_result;
 
     // create the driver instance
-    drv = RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
+    if(channel_type == "tcp"){
+        drv = RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_TCP);
+    }
+    else{
+        drv = RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
+    }
+
     
     if (!drv) {
         ROS_ERROR("Create Driver fail, exit");
         return -2;
     }
 
-    // make connection...
-    if (IS_FAIL(drv->connect(serial_port.c_str(), (_u32)serial_baudrate))) {
-        ROS_ERROR("Error, cannot bind to the specified serial port %s.",serial_port.c_str());
-        RPlidarDriver::DisposeDriver(drv);
-        return -1;
-    }
+    if(channel_type == "tcp"){
+        // make connection...
+        if (IS_FAIL(drv->connect(tcp_ip.c_str(), (_u32)tcp_port))) {
+            ROS_ERROR("Error, cannot bind to the specified serial port %s.",serial_port.c_str());
+            RPlidarDriver::DisposeDriver(drv);
+            return -1;
+        }
 
+    }
+    else{
+       // make connection...
+        if (IS_FAIL(drv->connect(serial_port.c_str(), (_u32)serial_baudrate))) {
+            ROS_ERROR("Error, cannot bind to the specified serial port %s.",serial_port.c_str());
+            RPlidarDriver::DisposeDriver(drv);
+            return -1;
+        }
+
+    }
+    
     // get rplidar device info
     if (!getRPLIDARDeviceInfo(drv)) {
         return -1;
