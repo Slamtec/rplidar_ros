@@ -36,6 +36,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include "std_srvs/Empty.h"
 #include "rplidar.h"
+#include "watchdog.h"
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -182,6 +183,9 @@ static float getAngle(const rplidar_response_measurement_node_hq_t& node)
 int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
     
+    rp::Watchdog watchdog;
+    watchdog.start(10000);
+
     std::string channel_type;
     std::string tcp_ip;
     std::string serial_port;
@@ -206,7 +210,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
 
-    ROS_INFO("RPLIDAR running on ROS package rplidar_ros. SDK Version:"RPLIDAR_SDK_VERSION"");
+    ROS_INFO_STREAM("RPLIDAR running on ROS package rplidar_ros. SDK Version: " << RPLIDAR_SDK_VERSION);
 
     u_result     op_result;
 
@@ -320,6 +324,8 @@ int main(int argc, char * argv[]) {
             float angle_min = DEG2RAD(0.0f);
             float angle_max = DEG2RAD(359.0f);
             if (op_result == RESULT_OK) {
+                watchdog.refresh();
+
                 if (angle_compensate) {
                     //const int angle_compensate_multiple = 1;
                     const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
