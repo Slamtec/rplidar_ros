@@ -44,9 +44,13 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  DIRECTORY launch rviz
+  DESTINATION share/${PROJECT_NAME}
+)
+
 # TODO(hallen): port this
-# install(DIRECTORY launch rviz sdk
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# install(DIRECTORY sdk
 #   USE_SOURCE_PERMISSIONS
 # )
 
