@@ -3,10 +3,10 @@ project(rplidar_ros)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra)
+  add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
 set(RPLIDAR_SDK_PATH "./sdk/")
@@ -19,8 +19,9 @@ FILE(GLOB RPLIDAR_SDK_SRC
 
 set(req_deps
   "rclcpp"
-#  "rosconsole"
   "sensor_msgs"
+  "std_srvs"
+  "rclcpp_components"
 )
 
 find_package(ament_cmake_auto REQUIRED)
@@ -31,22 +32,44 @@ ament_auto_find_build_dependencies(REQUIRED ${req_deps})
 include_directories(
   ${RPLIDAR_SDK_PATH}/include
   ${RPLIDAR_SDK_PATH}/src
+  include
 )
 
+# build composition node
+add_library(rplidar_composition_node SHARED
+  src/rplidar_node.cpp
+  ${RPLIDAR_SDK_SRC}
+)
+ament_target_dependencies(rplidar_composition_node ${req_deps})
+
+# build direct ROS 1 port
 ament_auto_add_executable(rplidarNode src/node.cpp ${RPLIDAR_SDK_SRC})
 ament_target_dependencies(rplidarNode ${req_deps})
 
 ament_auto_add_executable(rplidarNodeClient src/client.cpp)
 ament_target_dependencies(rplidarNodeClient ${req_deps})
 
+# build composition node
+ament_auto_add_executable(rplidar_composition src/standalone_rplidar.cpp)
+target_link_libraries(rplidar_composition rplidar_composition_node)
+ament_target_dependencies(rplidar_composition ${req_deps})
+
 install(
-  TARGETS rplidarNode rplidarNodeClient
+  TARGETS rplidarNode rplidarNodeClient rplidar_composition
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
   DIRECTORY launch rviz
   DESTINATION share/${PROJECT_NAME}
+)
+
+# Install the shared library composition node
+install(
+  TARGETS rplidar_composition_node
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
 # TODO(hallen): port this
