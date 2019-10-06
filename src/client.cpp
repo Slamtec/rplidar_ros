@@ -59,7 +59,8 @@ int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("rplidar_node_client");
-    auto sub = node->create_subscription<sensor_msgs::msg::LaserScan>("/scan", scanCallback);
+    rclcpp::QoS qos{1};
+    auto sub = node->create_subscription<sensor_msgs::msg::LaserScan>("/scan", qos, scanCallback);
     rclcpp::spin(node);
     return 0;
 }

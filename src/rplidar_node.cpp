@@ -110,30 +110,23 @@ rplidar_node::rplidar_node(rclcpp::NodeOptions options)
 
   /* done setting up RPLIDAR stuff, now set up ROS 2 stuff */
 
-  /* set QoS settings */
-  rmw_qos_profile_t qos = rmw_qos_profile_default;
-  qos.depth = 1;
-  qos.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
-
   /* connect to ROS clock */
   rclcpp::TimeSource timesource;
   m_clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
   timesource.attachClock(m_clock);
 
   /* create the publisher for "/scan" */
-  m_publisher = this->create_publisher<LaserScan>(topic_name_, qos);
+  m_publisher = this->create_publisher<LaserScan>(topic_name_, 10);
 
   /* create stop motor service */
   m_stop_motor_service = this->create_service<std_srvs::srv::Empty>(
     "stop_motor",
-    std::bind(&rplidar_node::stop_motor, this, std::placeholders::_1, std::placeholders::_2),
-    qos);
+    std::bind(&rplidar_node::stop_motor, this, std::placeholders::_1, std::placeholders::_2));
 
   /* create start motor service */
   m_start_motor_service = this->create_service<std_srvs::srv::Empty>(
     "start_motor",
-    std::bind(&rplidar_node::start_motor, this, std::placeholders::_1, std::placeholders::_2),
-    qos);
+    std::bind(&rplidar_node::start_motor, this, std::placeholders::_1, std::placeholders::_2));
   /* start timer */
   m_timer = this->create_wall_timer(1ms, std::bind(&rplidar_node::publish_loop, this));
 }
