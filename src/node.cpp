@@ -381,8 +381,8 @@ int main(int argc, char * argv[]) {
     }
 
     // done!
-    drv->stop();
     drv->stopMotor();
+    drv->stop();
     RPlidarDriver::DisposeDriver(drv);
     return 0;
 }

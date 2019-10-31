@@ -132,7 +132,6 @@ u_result RPlidarDriverImplCommon::reset(_u32 timeout)
     return RESULT_OK;
 }
 
-
 u_result RPlidarDriverImplCommon::clearNetSerialRxCache()
 {
     if (!isConnected()) return RESULT_OPERATION_FAIL;
@@ -264,7 +263,18 @@ u_result RPlidarDriverImplCommon::getDeviceInfo(rplidar_response_device_info_t &
             return RESULT_OPERATION_TIMEOUT;
         }
         _chanDev->recvdata(reinterpret_cast<_u8 *>(&info), sizeof(info));
+        if ((info.model >> 4) > RPLIDAR_TOF_MINUM_MAJOR_ID){
+            _isTofLidar = true;
+        }else {
+            _isTofLidar = false;
+        }
     }
+    return RESULT_OK;
+}
+
+u_result RPlidarDriverImplCommon::checkIfTofLidar(bool & isTofLidar, _u32 timeout)
+{
+    isTofLidar = _isTofLidar;
     return RESULT_OK;
 }
 
@@ -1773,7 +1783,6 @@ u_result RPlidarDriverImplCommon::stop(_u32 timeout)
             return ans;
         }
     }
-
     return RESULT_OK;
 }
 
@@ -1862,19 +1871,27 @@ u_result RPlidarDriverImplCommon::getScanDataWithInterval(rplidar_response_measu
 u_result RPlidarDriverImplCommon::getScanDataWithIntervalHq(rplidar_response_measurement_node_hq_t * nodebuffer, size_t & count)
 {
     size_t size_to_copy = 0;
+    // Prevent crash in case lidar is not scanning - that way this function will leave nodebuffer untouched and set
+    // count to 0.
+    if (_isScanning)
     {
         rp::hal::AutoLocker l(_lock);
         if (_cached_scan_node_hq_count_for_interval_retrieve == 0)
         {
             return RESULT_OPERATION_TIMEOUT;
         }
-        //copy all the nodes(_cached_scan_node_count_for_interval_retrieve nodes) in _cached_scan_node_buf_for_interval_retrieve
-        size_to_copy = _cached_scan_node_hq_count_for_interval_retrieve;
+        // Copy at most count nodes from _cached_scan_node_buf_for_interval_retrieve
+        size_to_copy = min(_cached_scan_node_hq_count_for_interval_retrieve, count);
         memcpy(nodebuffer, _cached_scan_node_hq_buf_for_interval_retrieve, size_to_copy * sizeof(rplidar_response_measurement_node_hq_t));
-        _cached_scan_node_hq_count_for_interval_retrieve = 0;
+        _cached_scan_node_hq_count_for_interval_retrieve -= size_to_copy;
+        // Move remaining data to the start of the array.
+        memmove(&_cached_scan_node_hq_buf_for_interval_retrieve[0], &_cached_scan_node_hq_buf_for_interval_retrieve[size_to_copy], _cached_scan_node_hq_count_for_interval_retrieve *  sizeof(rplidar_response_measurement_node_hq_t));
     }
     count = size_to_copy;
 
+	// If there is remaining data, return with a warning.
+	if (_cached_scan_node_hq_count_for_interval_retrieve > 0)
+		return RESULT_REMAINING_DATA;
     return RESULT_OK;
 }
 
@@ -2125,6 +2142,7 @@ u_result RPlidarDriverImplCommon::checkMotorCtrlSupport(bool & support, _u32 tim
 
 u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
 {
+    if (_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
     u_result ans;
     rplidar_payload_motor_pwm_t motor_pwm;
     motor_pwm.pwm_value = pwm;
@@ -2140,22 +2158,43 @@ u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
     return RESULT_OK;
 }
 
+u_result RPlidarDriverImplCommon::setLidarSpinSpeed(_u16 rpm, _u32 timeout)
+{
+    if (!_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
+
+    u_result ans;
+    rplidar_payload_hq_spd_ctrl_t speedReq;
+    speedReq.rpm = rpm;
+    if (IS_FAIL(ans = _sendCommand(RPLIDAR_CMD_HQ_MOTOR_SPEED_CTRL, (const _u8 *)&speedReq, sizeof(speedReq)))) {
+        return ans;
+    }
+    return RESULT_OK;
+}
+
 u_result RPlidarDriverImplCommon::startMotor()
 {
-    if (_isSupportingMotorCtrl) { // RPLIDAR A2
-        setMotorPWM(DEFAULT_MOTOR_PWM);
-        delay(500);
-        return RESULT_OK;
-    } else { // RPLIDAR A1
-        rp::hal::AutoLocker l(_lock);
-        _chanDev->clearDTR();
-        delay(500);
-        return RESULT_OK;
+    if (!_isTofLidar) {
+        if (_isSupportingMotorCtrl) { // RPLIDAR A2
+            setMotorPWM(DEFAULT_MOTOR_PWM);
+            delay(500);
+            return RESULT_OK;
+        }
+        else { // RPLIDAR A1
+            rp::hal::AutoLocker l(_lock);
+            _chanDev->clearDTR();
+            delay(500);
+            return RESULT_OK;
+        }
     }
+    else {
+        setLidarSpinSpeed(600);//set default rpm to tof lidar
+    }
+
 }
 
 u_result RPlidarDriverImplCommon::stopMotor()
 {
+    if(_isTofLidar) return RESULT_OK;
     if (_isSupportingMotorCtrl) { // RPLIDAR A2
         setMotorPWM(0);
         delay(500);

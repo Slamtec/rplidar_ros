@@ -36,6 +36,7 @@
 #include "arch/macOS/net_serial.h"
 #include <termios.h>
 #include <sys/select.h>
+#include <IOKit/serial/ioss.h>
 
 namespace rp{ namespace arch{ namespace net{
 
@@ -79,16 +80,8 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
     tcgetattr(serial_fd, &oldopt);
 	bzero(&options,sizeof(struct termios));
 
-    _u32 termbaud = getTermBaudBitmap(baudrate);
+    cfsetspeed(&options, B19200);
 
-    if (termbaud == (_u32)-1) {
-        fprintf(stderr, "Baudrate %d is not supported on macOS\r\n", baudrate);
-        close();
-        return false;
-    }
-    cfsetispeed(&options, termbaud);
-    cfsetospeed(&options, termbaud);
-	
 	// enable rx and tx
 	options.c_cflag |= (CLOCAL | CREAD);
 
@@ -111,19 +104,23 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
     options.c_oflag &= ~OPOST;
     
     tcflush(serial_fd,TCIFLUSH); 
-/*
-    if (fcntl(serial_fd, F_SETFL, FNDELAY))
-    {
-        close();
-        return false;
-    }
-*/
+
     if (tcsetattr(serial_fd, TCSANOW, &options))
     {
         close();
         return false;
     }
+	
+    printf("Setting serial port baudrate...\n");
     
+    speed_t speed = (speed_t)baudrate;
+    if (ioctl(serial_fd, IOSSIOSPEED, &speed)== -1) {
+        printf("Error calling ioctl(..., IOSSIOSPEED, ...) %s - %s(%d).\n",
+               portname, strerror(errno), errno);
+        close();
+        return false;
+    }
+
     _is_serial_opened = true;
 
     //Clear the DTR bit to let the motor spin

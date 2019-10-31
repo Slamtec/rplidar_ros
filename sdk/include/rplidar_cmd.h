@@ -109,6 +109,10 @@ typedef struct _rplidar_payload_acc_board_flag_t {
     _u32 reserved;
 } __attribute__((packed)) rplidar_payload_acc_board_flag_t;
 
+typedef struct _rplidar_payload_hq_spd_ctrl_t {
+    _u16  rpm;
+} __attribute__((packed)) rplidar_payload_hq_spd_ctrl_t;
+
 // Response
 // ------------------------------------------
 #define RPLIDAR_ANS_TYPE_DEVINFO          0x4
