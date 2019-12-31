@@ -188,7 +188,6 @@ u_result RPlidarDriverImplCommon::_waitResponseHeader(rplidar_ans_header_t * hea
 }
 
 
-
 u_result RPlidarDriverImplCommon::getHealth(rplidar_response_device_health_t & healthinfo, _u32 timeout)
 {
     u_result  ans;
@@ -1550,6 +1549,7 @@ u_result RPlidarDriverImplCommon::getScanModeCount(_u16& modeCount, _u32 timeout
 
 u_result RPlidarDriverImplCommon::startScan(bool force, bool useTypicalScan, _u32 options, RplidarScanMode* outUsedScanMode)
 {
+    if(_isScanning)return RESULT_ALREADY_DONE;
     u_result ans;
 
     bool ifSupportLidarConf = false;
@@ -2158,6 +2158,7 @@ u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
     return RESULT_OK;
 }
 
+
 u_result RPlidarDriverImplCommon::setLidarSpinSpeed(_u16 rpm, _u32 timeout)
 {
     if (!_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
@@ -2188,6 +2189,7 @@ u_result RPlidarDriverImplCommon::startMotor()
     }
     else {
         setLidarSpinSpeed(600);//set default rpm to tof lidar
+        return RESULT_OK;
     }
 
 }

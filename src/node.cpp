@@ -134,7 +134,6 @@ bool checkRPLIDARHealth(RPlidarDriver * drv)
 {
     u_result     op_result;
     rplidar_response_device_health_t healthinfo;
-
     op_result = drv->getHealth(healthinfo);
     if (IS_OK(op_result)) { 
         ROS_INFO("RPLidar health status : %d", healthinfo.status);
@@ -158,7 +157,6 @@ bool stop_motor(std_srvs::Empty::Request &req,
        return false;
 
   ROS_DEBUG("Stop motor");
-  drv->stop();
   drv->stopMotor();
   return true;
 }
@@ -168,9 +166,14 @@ bool start_motor(std_srvs::Empty::Request &req,
 {
   if(!drv)
        return false;
-  ROS_DEBUG("Start motor");
-  drv->startMotor();
-  drv->startScan(0,1);
+  if(drv->isConnected())
+  {
+      ROS_DEBUG("Start motor");
+      u_result ans=drv->startMotor();
+  
+      ans=drv->startScan(0,1);
+   }
+   else ROS_INFO("lost connection");
   return true;
 }
 
@@ -369,7 +372,6 @@ int main(int argc, char * argv[]) {
                 // All the data is invalid, just publish them
                 float angle_min = DEG2RAD(0.0f);
                 float angle_max = DEG2RAD(359.0f);
-
                 publish_scan(&scan_pub, nodes, count,
                              start_scan_time, scan_duration, inverted,
                              angle_min, angle_max, max_distance,
