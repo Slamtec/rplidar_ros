@@ -327,7 +327,7 @@ int main(int argc, char * argv[]) {
                     //const int angle_compensate_multiple = 1;
                     const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                     int angle_compensate_offset = 0;
-                    rplidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
+                    rplidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count+8];
                     memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_hq_t));
 
                     int i = 0, j = 0;
