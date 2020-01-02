@@ -1,5 +1,5 @@
 <launch>
-  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen">
+  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen" respawn="true" respawn_delay="2">
   <param name="channel_type"        type="string" value="tcp"/>  
   <param name="tcp_ip"              type="string" value="192.168.0.7"/>  
   <param name="tcp_port"            type="int"    value="20108"/>
