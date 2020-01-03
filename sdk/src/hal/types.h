@@ -77,9 +77,6 @@ typedef _u32            _word_size_t;
 
 
 
-#define __le 
-#define __be
-
 #define _multi_thread
 #define _single_thread
 
