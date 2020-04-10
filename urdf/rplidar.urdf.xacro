@@ -2,14 +2,15 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
   <xacro:macro name="rplidar_a2" params="name ros_topic min_angle:=-3.142 max_angle:=3.142 min_range:=0.15 max_range:=6">
-    <xacro:sick_tim name="${name}" ros_topic="${ros_topic}" 
+    <xacro:laser name="${name}" ros_topic="${ros_topic}" 
       length="0.07250" width="0.07250" height="0.04080" mass="0.250" z_offset="0.03080"
+      update_rate="10.0" samples="400" resolution="0.9"
       min_range="${min_range}" max_range="${max_range}"
       min_angle="${min_angle}" max_angle="${max_angle}"
-      mesh="package://sick_tim/meshes/sick_tim551.stl" />
+      mesh="package://rplidar_ros/urdf/stl/rplidar_a2_simple.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_tim" params="name ros_topic length width height mass z_offset min_angle max_angle min_range max_range mesh">
+  <xacro:macro name="laser" params="name ros_topic length width height mass z_offset update_rate samples resolution min_angle max_angle min_range max_range mesh">
     <!-- z_offset: distance between base plate and laser center (= center of mesh) -->
     <link name="${name}_mount_link">
       <inertial>
@@ -31,8 +32,8 @@
         <geometry>
           <mesh filename="${mesh}" />
         </geometry>
-        <material name="blue" >
-          <color rgba="0 0 1 1" />
+        <material name="red" >
+          <color rgba="1 0 0 1" />
         </material>
       </visual>
       <collision>
@@ -48,16 +49,16 @@
           izz="${0.0833333 * mass * (length * length + width * width)}" />
       </inertial>
     </link>
-    <xacro:sick_tim_laser_gazebo_v0 name="${name}" link="${name}" ros_topic="${ros_topic}" 
-      update_rate="10.0" samples="400" resolution="0.9"
+    <xacro:laser_gazebo_v1 name="${name}" link="${name}" ros_topic="${ros_topic}" 
+      update_rate="${update_rate}" samples="${samples}" resolution="${resolution}"
       min_angle="${min_angle}" max_angle="${max_angle}" 
       min_range="${min_range}" max_range="${max_range}"/>
   </xacro:macro>
 
 
-  <xacro:macro name="sick_tim_laser_gazebo_v0" params="name link ros_topic update_rate min_angle max_angle min_range max_range samples resolution">
+  <xacro:macro name="laser_gazebo_v1" params="name link ros_topic update_rate samples resolution min_angle max_angle min_range max_range">
     <gazebo reference="${link}">
-      <material value="Gazebo/Blue" />
+      <material value="Gazebo/Red" />
       <sensor type="ray" name="${name}">
         <always_on>true</always_on>
         <update_rate>${update_rate}</update_rate>
