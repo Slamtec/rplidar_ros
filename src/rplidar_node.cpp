@@ -38,20 +38,20 @@
 namespace rplidar_ros
 {
 
-rplidar_node::rplidar_node(rclcpp::NodeOptions options)
+rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
 : rclcpp::Node("rplidar_node", options)
 {
   /* set parameters */
-  this->get_parameter_or("channel_type", channel_type_, std::string("serial"));
-  this->get_parameter_or("tcp_ip", tcp_ip_, std::string("192.168.0.7"));
-  this->get_parameter_or("tcp_port", tcp_port_, 20108);
-  this->get_parameter_or("serial_port", serial_port_, std::string("/dev/ttyUSB0"));
-  this->get_parameter_or("serial_baudrate", serial_baudrate_, 115200);
-  this->get_parameter_or("frame_id", frame_id_, std::string("laser_frame"));
-  this->get_parameter_or("inverted", inverted_, false);
-  this->get_parameter_or("angle_compensate", angle_compensate_, false);
-  this->get_parameter_or("scan_mode", scan_mode_, std::string());
-  this->get_parameter_or("topic_name", topic_name_, std::string("scan"));
+  channel_type_ = this->declare_parameter("channel_type", "serial");
+  tcp_ip_ = this->declare_parameter("tcp_ip", "192.168.0.7");
+  tcp_port_ = this->declare_parameter("tcp_port", 20108);
+  serial_port_ = this->declare_parameter("serial_port", "/dev/ttyUSB0");
+  serial_baudrate_ = this->declare_parameter("serial_baudrate", 115200);
+  frame_id_ = this->declare_parameter("frame_id", std::string("laser_frame"));
+  inverted_ = this->declare_parameter("inverted", false);
+  angle_compensate_ = this->declare_parameter("angle_compensate", false);
+  scan_mode_ = this->declare_parameter("scan_mode", std::string());
+  topic_name_ = this->declare_parameter("topic_name", std::string("scan"));
 
   RCLCPP_INFO(this->get_logger(),
     "RPLIDAR running on ROS 2 package rplidar_ros. SDK Version: '%s'", RPLIDAR_SDK_VERSION);
@@ -105,15 +105,13 @@ rplidar_node::rplidar_node(rclcpp::NodeOptions options)
 
   if (!set_scan_mode()) {
     /* set the scan mode */
-    return;
+    m_drv->stop();
+    m_drv->stopMotor();
+    RPlidarDriver::DisposeDriver(m_drv);
+    exit(1);
   }
 
   /* done setting up RPLIDAR stuff, now set up ROS 2 stuff */
-
-  /* connect to ROS clock */
-  rclcpp::TimeSource timesource;
-  m_clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
-  timesource.attachClock(m_clock);
 
   /* create the publisher for "/scan" */
   m_publisher = this->create_publisher<LaserScan>(topic_name_, 10);
@@ -145,7 +143,7 @@ void rplidar_node::publish_scan(
   sensor_msgs::msg::LaserScan scan_msg;
 
   /* NOTE(allenh1): time was passed in as a parameter before */
-  scan_msg.header.stamp = m_clock->now();
+  scan_msg.header.stamp = this->now();
   scan_msg.header.frame_id = frame_id_;
   scan_count++;
 
@@ -279,17 +277,18 @@ bool rplidar_node::set_scan_mode()
     if (IS_OK(op_result)) {
       auto iter = std::find_if(allSupportedScanModes.begin(), allSupportedScanModes.end(),
           [this](auto s1) {
-            return s1.scan_mode == scan_mode_;
+            return std::string(s1.scan_mode) == scan_mode_;
           });
       if (iter == allSupportedScanModes.end()) {
         RCLCPP_ERROR(
-          this->get_logger(), "scan mode `%s' is not supported by lidar, supported modes:",
-          scan_mode_.c_str());
+          this->get_logger(), "scan mode `%s' is not supported by lidar, supported modes ('%zd'):",
+          scan_mode_.c_str(), allSupportedScanModes.size());
         for (const auto & it : allSupportedScanModes) {
-          RCLCPP_ERROR(this->get_logger(), "\t%s: max_distance: %.1f m, Point number: %.1fK",
+          RCLCPP_ERROR(this->get_logger(), "%s: max_distance: %.1f m, Point number: %.1fK",
             it.scan_mode, it.max_distance, (1000 / it.us_per_sample));
         }
         op_result = RESULT_OPERATION_FAIL;
+        return false;
       } else {
         op_result = m_drv->startScanExpress(false /* not force scan */, iter->id, 0,
             &current_scan_mode);
@@ -326,9 +325,9 @@ void rplidar_node::publish_loop()
   size_t count = 360 * 8;
   auto nodes = std::make_unique<rplidar_response_measurement_node_hq_t[]>(count);
 
-  start_scan_time = m_clock->now();
+  start_scan_time = this->now();
   op_result = m_drv->grabScanDataHq(nodes.get(), count);
-  end_scan_time = m_clock->now();
+  end_scan_time = this->now();
   double scan_duration = (end_scan_time - start_scan_time).nanoseconds() * 1E-9;
 
   if (op_result != RESULT_OK) {
