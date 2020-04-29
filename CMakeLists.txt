@@ -13,7 +13,15 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosconsole
   sensor_msgs
+  message_generation
 )
+
+add_service_files(
+  FILES
+  MotorSpeed.srv
+)
+
+generate_messages()
 
 include_directories(
   ${RPLIDAR_SDK_PATH}/include
