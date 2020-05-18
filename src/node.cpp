@@ -36,6 +36,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include "std_srvs/Empty.h"
 #include "rplidar.h"
+#include "rplidar_ros/MotorSpeed.h"
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -177,6 +178,20 @@ bool start_motor(std_srvs::Empty::Request &req,
   return true;
 }
 
+bool set_motor_speed(rplidar_ros::MotorSpeed::Request &req,
+                               rplidar_ros::MotorSpeed::Response &res)
+{
+  if(!drv)
+       return false;
+  if(drv->isConnected())
+  {
+      ROS_DEBUG("Set Motor PWM");
+      u_result ans=drv->setMotorPWM(req.speed);
+   }
+   else ROS_INFO("lost connection");
+  return true;
+}
+
 static float getAngle(const rplidar_response_measurement_node_hq_t& node)
 {
     return node.angle_z_q14 * 90.f / 16384.f;
@@ -196,6 +211,7 @@ int main(int argc, char * argv[]) {
     float max_distance = 8.0;
     int angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
     std::string scan_mode;
+    int motor_speed;
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
@@ -208,7 +224,8 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
-
+    nh_private.param<int>("motor_speed", motor_speed, DEFAULT_MOTOR_PWM);
+    
     ROS_INFO("RPLIDAR running on ROS package rplidar_ros. SDK Version:"RPLIDAR_SDK_VERSION"");
 
     u_result     op_result;
@@ -259,8 +276,11 @@ int main(int argc, char * argv[]) {
 
     ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
     ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
+    ros::ServiceServer set_motor_speed_service = nh.advertiseService("set_motor_speed", set_motor_speed);
 
     drv->startMotor();
+
+    drv->setMotorPWM(motor_speed);
 
     RplidarScanMode current_scan_mode;
     if (scan_mode.empty()) {
