@@ -132,7 +132,6 @@ u_result RPlidarDriverImplCommon::reset(_u32 timeout)
     return RESULT_OK;
 }
 
-
 u_result RPlidarDriverImplCommon::clearNetSerialRxCache()
 {
     if (!isConnected()) return RESULT_OPERATION_FAIL;
@@ -264,7 +263,18 @@ u_result RPlidarDriverImplCommon::getDeviceInfo(rplidar_response_device_info_t &
             return RESULT_OPERATION_TIMEOUT;
         }
         _chanDev->recvdata(reinterpret_cast<_u8 *>(&info), sizeof(info));
+        if ((info.model >> 4) > RPLIDAR_TOF_MINUM_MAJOR_ID){
+            _isTofLidar = true;
+        }else {
+            _isTofLidar = false;
+        }
     }
+    return RESULT_OK;
+}
+
+u_result RPlidarDriverImplCommon::checkIfTofLidar(bool & isTofLidar, _u32 timeout)
+{
+    isTofLidar = _isTofLidar;
     return RESULT_OK;
 }
 
@@ -655,21 +665,49 @@ u_result RPlidarDriverImplCommon::checkExpressScanSupported(bool & support, _u32
     return RESULT_OK;
 }
 
+
+int RPlidarDriverImplCommon::_getSyncBitByAngle(const int current_angle_q16, const int angleInc_q16)
+{
+    static int last_angleInc_q16 = 0;
+    int current_angleInc_q16 = angleInc_q16;
+    int syncBit_check_threshold = (int)((5 << 16) / angleInc_q16) + 1;//find syncBit in 0~3 degree
+    int syncBit = 0;
+    int predict_angle_q16 = (current_angle_q16 + angleInc_q16) % (360 << 16);
+
+    if (predict_angle_q16 < 0) {
+        predict_angle_q16 += (360 << 16);
+    }
+    if (!_syncBit_is_finded)
+    {
+        if (0 < predict_angle_q16 && predict_angle_q16 < (90 << 16))
+            syncBit = 1;
+        if (syncBit)
+            _syncBit_is_finded = true;
+    }
+    else
+    {
+        if(predict_angle_q16 > (270<<16))
+            _syncBit_is_finded = false;
+        //if (predict_angle_q16 > (syncBit_check_threshold * angleInc_q16)) {
+        //    _is_previous_syncBit = false;
+        //}
+    }
+    last_angleInc_q16 = current_angleInc_q16;
+    return syncBit;
+}
+
 u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
 {
     rplidar_response_capsule_measurement_nodes_t    capsule_node;
-    rplidar_response_measurement_node_hq_t   local_buf[128];
-    size_t                                   count = 128;
+    rplidar_response_measurement_node_hq_t   local_buf[512];
+    size_t                                   count = 512;
     rplidar_response_measurement_node_hq_t   local_scan[MAX_SCAN_NODES];
     size_t                                   scan_count = 0;
     u_result                                 ans;
     memset(local_scan, 0, sizeof(local_scan));
 
     _waitCapsuledNode(capsule_node); // // always discard the first data since it may be incomplete
-
     
-    
-
     while(_isScanning)
     {
         if (IS_FAIL(ans=_waitCapsuledNode(capsule_node))) {
@@ -726,10 +764,11 @@ u_result RPlidarDriverImplCommon::_cacheCapsuledScanData()
 u_result RPlidarDriverImplCommon::_cacheUltraCapsuledScanData()
 {
     rplidar_response_ultra_capsule_measurement_nodes_t    ultra_capsule_node;
-    rplidar_response_measurement_node_hq_t   local_buf[128];
-    size_t                                   count = 128;
+    rplidar_response_measurement_node_hq_t   local_buf[512];
+    size_t                                   count = 512;
     rplidar_response_measurement_node_hq_t   local_scan[MAX_SCAN_NODES];
     size_t                                   scan_count = 0;
+    size_t                                   last_scan_count = 0;
     u_result                                 ans;
     memset(local_scan, 0, sizeof(local_scan));
 
@@ -799,8 +838,8 @@ void     RPlidarDriverImplCommon::_capsuleToNormal(const rplidar_response_capsul
         for (size_t pos = 0; pos < _countof(_cached_previous_capsuledata.cabins); ++pos)
         {
             int dist_q2[2];
-            int angle_q6[2];
-            int syncBit[2];
+            int angle_q16[2];
+            int syncBit[2] = { 0,0 };
 
             dist_q2[0] = (_cached_previous_capsuledata.cabins[pos].distance_angle_1 & 0xFFFC);
             dist_q2[1] = (_cached_previous_capsuledata.cabins[pos].distance_angle_2 & 0xFFFC);
@@ -808,23 +847,24 @@ void     RPlidarDriverImplCommon::_capsuleToNormal(const rplidar_response_capsul
             int angle_offset1_q3 = ( (_cached_previous_capsuledata.cabins[pos].offset_angles_q3 & 0xF) | ((_cached_previous_capsuledata.cabins[pos].distance_angle_1 & 0x3)<<4));
             int angle_offset2_q3 = ( (_cached_previous_capsuledata.cabins[pos].offset_angles_q3 >> 4) | ((_cached_previous_capsuledata.cabins[pos].distance_angle_2 & 0x3)<<4));
 
-            angle_q6[0] = ((currentAngle_raw_q16 - (angle_offset1_q3<<13))>>10);
-            syncBit[0] =  (( (currentAngle_raw_q16 + angleInc_q16) % (360<<16)) < angleInc_q16 )?1:0;
+            int syncBit_check_threshold = (int)((2 << 16) / angleInc_q16) + 1;//find syncBit in 0~1 degree
+
+            angle_q16[0] = (currentAngle_raw_q16 - (angle_offset1_q3<<13));
+            syncBit[0] = _getSyncBitByAngle(currentAngle_raw_q16, angleInc_q16);
             currentAngle_raw_q16 += angleInc_q16;
 
-
-            angle_q6[1] = ((currentAngle_raw_q16 - (angle_offset2_q3<<13))>>10);
-            syncBit[1] =  (( (currentAngle_raw_q16 + angleInc_q16) % (360<<16)) < angleInc_q16 )?1:0;
+            angle_q16[1] = (currentAngle_raw_q16 - (angle_offset2_q3<<13));
+            syncBit[1] = _getSyncBitByAngle(currentAngle_raw_q16, angleInc_q16);
             currentAngle_raw_q16 += angleInc_q16;
 
             for (int cpos = 0; cpos < 2; ++cpos) {
 
-                if (angle_q6[cpos] < 0) angle_q6[cpos] += (360<<6);
-                if (angle_q6[cpos] >= (360<<6)) angle_q6[cpos] -= (360<<6);
+                if (angle_q16[cpos] < 0) angle_q16[cpos] += (360<<16);
+                if (angle_q16[cpos] >= (360<<16)) angle_q16[cpos] -= (360<<16);
 
                 rplidar_response_measurement_node_hq_t node;
 
-                node.angle_z_q14 = _u16((angle_q6[cpos] << 8) / 90);
+                node.angle_z_q14 = _u16((angle_q16[cpos] >> 2) / 90);
                 node.flag = (syncBit[cpos] | ((!syncBit[cpos]) << 1));
                 node.quality = dist_q2[cpos] ? (0x2f << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) : 0;
                 node.dist_mm_q2 = dist_q2[cpos];
@@ -863,7 +903,7 @@ void     RPlidarDriverImplCommon::_dense_capsuleToNormal(const rplidar_response_
             const int dist = static_cast<const int>(_cached_previous_dense_capsuledata.cabins[pos].distance);
             dist_q2 = dist << 2;
             angle_q6 = (currentAngle_raw_q16 >> 10);
-            syncBit = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < angleInc_q16) ? 1 : 0;
+            syncBit = _getSyncBitByAngle(currentAngle_raw_q16, angleInc_q16);
             currentAngle_raw_q16 += angleInc_q16;
 
             if (angle_q6 < 0) angle_q6 += (360 << 6);
@@ -1153,7 +1193,7 @@ void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra
         {
             int dist_q2[3];
             int angle_q6[3];
-            int syncBit[3];
+            int syncBit[3] = {0};
 
 
             _u32 combined_x3 = _cached_previous_ultracapsuledata.ultra_cabins[pos].combined_x3;
@@ -1213,8 +1253,8 @@ void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra
 
             for (int cpos = 0; cpos < 3; ++cpos)
             {
-
-                syncBit[cpos] = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < angleInc_q16) ? 1 : 0;
+                int syncBit_check_threshold = (int)((3 << 16) / angleInc_q16)+1;//find syncBit in 0~1 degree
+                syncBit[cpos] = _getSyncBitByAngle(currentAngle_raw_q16, angleInc_q16);
 
                 int offsetAngleMean_q16 = (int)(7.5 * 3.1415926535 * (1 << 16) / 180.0);
 
@@ -1238,7 +1278,6 @@ void RPlidarDriverImplCommon::_ultraCapsuleToNormal(const rplidar_response_ultra
                 node.quality = dist_q2[cpos] ? (0x2F << RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) : 0;
                 node.angle_z_q14 = _u16((angle_q6[cpos] << 8) / 90);
                 node.dist_mm_q2 = dist_q2[cpos];
-
                 nodebuffer[nodeCount++] = node;
             }
 
@@ -1378,6 +1417,7 @@ u_result RPlidarDriverImplCommon::getLidarSampleDuration(float& sampleDurationRe
     }
     const _u32 *result = reinterpret_cast<const _u32*>(&answer[0]);
     sampleDurationRes = (float)(*result >> 8);
+    _cached_current_us_per_sample = sampleDurationRes;
     return ans;
 }
 
@@ -1649,7 +1689,7 @@ u_result RPlidarDriverImplCommon::startScanExpress(bool force, _u16 scanMode, _u
             {
                 return RESULT_INVALID_DATA;
             }
-
+            
             ans = getMaxDistance(outUsedScanMode->max_distance, outUsedScanMode->id);
             if (IS_FAIL(ans))
             {
@@ -1757,6 +1797,7 @@ u_result RPlidarDriverImplCommon::startScanExpress(bool force, _u16 scanMode, _u
         if (_cachethread.getHandle() == 0) {
             return RESULT_OPERATION_FAIL;
         }
+        
     }
     return RESULT_OK;
 }
@@ -1773,7 +1814,6 @@ u_result RPlidarDriverImplCommon::stop(_u32 timeout)
             return ans;
         }
     }
-
     return RESULT_OK;
 }
 
@@ -1862,19 +1902,27 @@ u_result RPlidarDriverImplCommon::getScanDataWithInterval(rplidar_response_measu
 u_result RPlidarDriverImplCommon::getScanDataWithIntervalHq(rplidar_response_measurement_node_hq_t * nodebuffer, size_t & count)
 {
     size_t size_to_copy = 0;
+    // Prevent crash in case lidar is not scanning - that way this function will leave nodebuffer untouched and set
+    // count to 0.
+    if (_isScanning)
     {
         rp::hal::AutoLocker l(_lock);
         if (_cached_scan_node_hq_count_for_interval_retrieve == 0)
         {
             return RESULT_OPERATION_TIMEOUT;
         }
-        //copy all the nodes(_cached_scan_node_count_for_interval_retrieve nodes) in _cached_scan_node_buf_for_interval_retrieve
-        size_to_copy = _cached_scan_node_hq_count_for_interval_retrieve;
+        // Copy at most count nodes from _cached_scan_node_buf_for_interval_retrieve
+        size_to_copy = min(_cached_scan_node_hq_count_for_interval_retrieve, count);
         memcpy(nodebuffer, _cached_scan_node_hq_buf_for_interval_retrieve, size_to_copy * sizeof(rplidar_response_measurement_node_hq_t));
-        _cached_scan_node_hq_count_for_interval_retrieve = 0;
+        _cached_scan_node_hq_count_for_interval_retrieve -= size_to_copy;
+        // Move remaining data to the start of the array.
+        memmove(&_cached_scan_node_hq_buf_for_interval_retrieve[0], &_cached_scan_node_hq_buf_for_interval_retrieve[size_to_copy], _cached_scan_node_hq_count_for_interval_retrieve *  sizeof(rplidar_response_measurement_node_hq_t));
     }
     count = size_to_copy;
 
+	// If there is remaining data, return with a warning.
+	if (_cached_scan_node_hq_count_for_interval_retrieve > 0)
+		return RESULT_REMAINING_DATA;
     return RESULT_OK;
 }
 
@@ -2073,6 +2121,7 @@ u_result RPlidarDriverImplCommon::getSampleDuration_uS(rplidar_response_sample_r
         }
         _chanDev->recvdata(reinterpret_cast<_u8 *>(&rateInfo), sizeof(rateInfo));
     }
+    _cached_current_us_per_sample = rateInfo.express_sample_duration_us;
     return RESULT_OK;
 }
 
@@ -2125,6 +2174,7 @@ u_result RPlidarDriverImplCommon::checkMotorCtrlSupport(bool & support, _u32 tim
 
 u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
 {
+    if (_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
     u_result ans;
     rplidar_payload_motor_pwm_t motor_pwm;
     motor_pwm.pwm_value = pwm;
@@ -2140,22 +2190,43 @@ u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
     return RESULT_OK;
 }
 
+u_result RPlidarDriverImplCommon::setLidarSpinSpeed(_u16 rpm, _u32 timeout)
+{
+    if (!_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
+
+    u_result ans;
+    rplidar_payload_hq_spd_ctrl_t speedReq;
+    speedReq.rpm = rpm;
+    if (IS_FAIL(ans = _sendCommand(RPLIDAR_CMD_HQ_MOTOR_SPEED_CTRL, (const _u8 *)&speedReq, sizeof(speedReq)))) {
+        return ans;
+    }
+    return RESULT_OK;
+}
+
 u_result RPlidarDriverImplCommon::startMotor()
 {
-    if (_isSupportingMotorCtrl) { // RPLIDAR A2
-        setMotorPWM(DEFAULT_MOTOR_PWM);
-        delay(500);
-        return RESULT_OK;
-    } else { // RPLIDAR A1
-        rp::hal::AutoLocker l(_lock);
-        _chanDev->clearDTR();
-        delay(500);
-        return RESULT_OK;
+    if (!_isTofLidar) {
+        if (_isSupportingMotorCtrl) { // RPLIDAR A2
+            setMotorPWM(DEFAULT_MOTOR_PWM);
+            delay(500);
+            return RESULT_OK;
+        }
+        else { // RPLIDAR A1
+            rp::hal::AutoLocker l(_lock);
+            _chanDev->clearDTR();
+            delay(500);
+            return RESULT_OK;
+        }
     }
+    else {
+        setLidarSpinSpeed(600);//set default rpm to tof lidar
+    }
+
 }
 
 u_result RPlidarDriverImplCommon::stopMotor()
 {
+    if(_isTofLidar) return RESULT_OK;
     if (_isSupportingMotorCtrl) { // RPLIDAR A2
         setMotorPWM(0);
         delay(500);
