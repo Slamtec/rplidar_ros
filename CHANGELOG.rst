@@ -16,6 +16,48 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
+2.0.0 (2020-07-15)
+------------------
+* Update SDK to Version 0.12.0 (`#14 <https://github.com/allenh1/rplidar_ros/issues/14>`_)
+  * Register the rclcpp component
+  * Update RPLIDAR SDK to version 1.12.0
+* Update ROS 2 parameters and use node's clock instance (`#9 <https://github.com/allenh1/rplidar_ros/issues/9>`_)
+  * Update ROS 2 parameters and use node's clock instance
+  * Fix scan_mode listing output
+  * Stop motors and exit when set_scan_mode() call fails
+* Fix compilation with eloquent (`#6 <https://github.com/allenh1/rplidar_ros/issues/6>`_)
+* Use Composition node with launch files (`#4 <https://github.com/allenh1/rplidar_ros/issues/4>`_)
+* Composable nodes (`#3 <https://github.com/allenh1/rplidar_ros/issues/3>`_)
+  * Begin implementation of composable rplidar_ros::rplidar_node
+  * Declare composition node library in CMake, as well as continue the port
+  * Get to a compiling state
+  * Add start/stop motor callbacks + more driver setup
+  * Add publish loop for scans
+  * Add composition node
+  * Lint
+* Port rviz and launch files to ROS2 (`#2 <https://github.com/allenh1/rplidar_ros/issues/2>`_)
+  * Port non-rviz launch files to ROS2
+  * Compatibility with rviz2
+  * revert whitespace changes
+  * Port the remaining launch files to ROS2
+  * Revert more whitespace changes
+  * Fix luanch and rviz install path indent level
+* Ros2 port (`#1 <https://github.com/allenh1/rplidar_ros/issues/1>`_)
+  ROS 2 port
+  * Port CMakeLists.txt
+  * Port package.xml
+  * Port client.cpp
+  * Port node.cpp
+  Fix compilation
+* Support TCP
+* upgrade sdk 1.10.0
+* upgrade sdk 1.9.0
+  [new feature] support baudrate 57600 and 1382400, support HQ scan response
+  [bugfix] TCP channel doesn't work
+  [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
+* [bugfix]modify scan_mode at test_rplidar.launch and test_rplidar_a3.launch
+* Contributors: Dan Rose, Hunter L. Allen, WubinXia, kint
+
 1.7.0 (2018-07-19)
 ------------------
 * Update RPLIDAR SDK to 1.7.0

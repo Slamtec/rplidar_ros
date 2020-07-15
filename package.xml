@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>rplidar_ros</name>
-  <version>1.10.0</version>
+  <version>2.0.0</version>
   <description>The rplidar ros package, support rplidar A2/A1 and A3/S1</description>
 
-  <maintainer email="ros@slamtec.com">Slamtec ROS Maintainer</maintainer>
+  <maintainer email="hunterlallen@protonmail.com">Hunter L. Allen</maintainer>
+  <author email="ros@slamtec.com">Slamtec ROS Maintainer</author>
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
