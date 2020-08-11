@@ -71,10 +71,10 @@ void publish_scan(ros::Publisher *pub,
       scan_msg.angle_max =  M_PI - angle_max;
     }
     scan_msg.angle_increment =
-        (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
+        (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count);
 
     scan_msg.scan_time = scan_time;
-    scan_msg.time_increment = scan_time / (double)(node_count-1);
+    scan_msg.time_increment = scan_time / (double)(node_count);
     scan_msg.range_min = 0.15;
     scan_msg.range_max = max_distance;//8.0;
 
