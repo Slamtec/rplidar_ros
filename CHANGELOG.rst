@@ -16,6 +16,23 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
+Forthcoming
+-----------
+* Remove old driver (`#21 <https://github.com/allenh1/rplidar_ros/issues/21>`_)
+  * Remove old rplidar driver in favor of the component version
+  * Lint the source
+* Fix incompatibilities with slam_toolbox (`#20 <https://github.com/allenh1/rplidar_ros/issues/20>`_)
+  * Fix incompatibilities with slam_toolbox:
+  - Fix angle compensate mode to publish angle compensated values
+  - Fix angle_increment calculation
+  - Add optional flip_x_axis option to deal with issue discussed here: https://github.com/SteveMacenski/slam_toolbox/issues/198.  Flip x-axis can be used when laser is mounted with motor behind it as rotated TF laser frame doesn't seem to work with slam_toolbox.
+  * Fix whitespace
+* Fix node count for component implementation (`#19 <https://github.com/allenh1/rplidar_ros/issues/19>`_)
+* Slam Toolbox compatibility (`#18 <https://github.com/allenh1/rplidar_ros/issues/18>`_)
+  (cherry picked from commit f21079fea8eca8946b5b4ae72f50b8d9f1ac46a2)
+* Fix building with GCC 10 (`#17 <https://github.com/allenh1/rplidar_ros/issues/17>`_)
+* Contributors: Christen Lofland, Hunter L. Allen, justinIRBT
+
 2.0.0 (2020-07-15)
 ------------------
 * Update SDK to Version 0.12.0 (`#14 <https://github.com/allenh1/rplidar_ros/issues/14>`_)
