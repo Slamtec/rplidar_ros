@@ -106,6 +106,7 @@ private:
   std::string frame_id_;
   bool inverted_;
   bool angle_compensate_;
+  bool flip_x_axis_;
   int m_angle_compensate_multiple;
   std::string scan_mode_;
   /* Publisher */

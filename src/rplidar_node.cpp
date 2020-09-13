@@ -50,6 +50,7 @@ rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
   frame_id_ = this->declare_parameter("frame_id", std::string("laser_frame"));
   inverted_ = this->declare_parameter("inverted", false);
   angle_compensate_ = this->declare_parameter("angle_compensate", false);
+  flip_x_axis_ = this->declare_parameter("flip_x_axis", false);
   scan_mode_ = this->declare_parameter("scan_mode", std::string());
   topic_name_ = this->declare_parameter("topic_name", std::string("scan"));
 
@@ -157,36 +158,36 @@ void rplidar_node::publish_scan(
     scan_msg.angle_max = M_PI - angle_max;
   }
   scan_msg.angle_increment =
-    (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count);
+    (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count - 1);
 
   scan_msg.scan_time = scan_time;
-  scan_msg.time_increment = scan_time / (double)(node_count);
+  scan_msg.time_increment = scan_time / (double)(node_count - 1);
   scan_msg.range_min = min_distance;
   scan_msg.range_max = max_distance;
 
   scan_msg.intensities.resize(node_count);
   scan_msg.ranges.resize(node_count);
   bool reverse_data = (!inverted_ && reversed) || (inverted_ && !reversed);
-  if (!reverse_data) {
-    for (size_t i = 0; i < node_count; i++) {
-      float read_value = (float) nodes[i].dist_mm_q2 / 4.0f / 1000;
-      if (read_value == 0.0) {
-        scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
-      } else {
-        scan_msg.ranges[i] = read_value;
-      }
-      scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
+  size_t scan_midpoint = node_count / 2;
+  for (size_t i = 0; i < node_count; ++i) {
+    float read_value = (float) nodes[i].dist_mm_q2 / 4.0f / 1000;
+    size_t apply_index = i;
+    if (reverse_data) {
+      apply_index = node_count - 1 - i;
     }
-  } else {
-    for (size_t i = 0; i < node_count; i++) {
-      float read_value = (float)nodes[i].dist_mm_q2 / 4.0f / 1000;
-      if (read_value == 0.0) {
-        scan_msg.ranges[node_count - 1 - i] = std::numeric_limits<float>::infinity();
+    if (flip_x_axis_) {
+      if (apply_index >= scan_midpoint) {
+        apply_index = apply_index-scan_midpoint;
       } else {
-        scan_msg.ranges[node_count - 1 - i] = read_value;
+        apply_index = apply_index + scan_midpoint;
       }
-      scan_msg.intensities[node_count - 1 - i] = (float) (nodes[i].quality >> 2);
     }
+    if (read_value == 0.0) {
+      scan_msg.ranges[apply_index] = std::numeric_limits<float>::infinity();
+    } else {
+      scan_msg.ranges[apply_index] = read_value;
+    }
+    scan_msg.intensities[apply_index] = (float) (nodes[i].quality >> 2);
   }
 
   m_publisher->publish(scan_msg);
@@ -311,9 +312,9 @@ bool rplidar_node::set_scan_mode()
   max_distance = current_scan_mode.max_distance;
   RCLCPP_INFO(
     this->get_logger(),
-    "current scan mode: %s, max_distance: %.1f m, Point number: %.1fK , angle_compensate: %d", current_scan_mode.scan_mode,
+    "current scan mode: %s, max_distance: %.1f m, Point number: %.1fK , angle_compensate: %d, flip_x_axis %d", current_scan_mode.scan_mode,
     current_scan_mode.max_distance, (1000 / current_scan_mode.us_per_sample),
-    m_angle_compensate_multiple);
+    m_angle_compensate_multiple, flip_x_axis_);
   return true;
 }
 
@@ -340,8 +341,8 @@ void rplidar_node::publish_loop()
     if (angle_compensate_) {
       const int angle_compensate_nodes_count = 360 * m_angle_compensate_multiple;
       int angle_compensate_offset = 0;
-      rplidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
-      memset(angle_compensate_nodes, 0,
+      auto angle_compensate_nodes = std::make_unique<rplidar_response_measurement_node_hq_t[]>(angle_compensate_nodes_count);
+      memset(angle_compensate_nodes.get(), 0,
         angle_compensate_nodes_count * sizeof(rplidar_response_measurement_node_hq_t));
 
       size_t i = 0, j = 0;
@@ -356,7 +357,7 @@ void rplidar_node::publish_loop()
         }
       }
 
-      publish_scan(scan_duration, std::move(nodes), count);
+      publish_scan(scan_duration, std::move(angle_compensate_nodes), angle_compensate_nodes_count);
     } else {
       int start_node = 0, end_node = 0;
       int i = 0;
