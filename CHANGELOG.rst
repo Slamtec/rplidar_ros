@@ -16,8 +16,8 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
-Forthcoming
------------
+2.0.1 (2020-09-13)
+------------------
 * Remove old driver (`#21 <https://github.com/allenh1/rplidar_ros/issues/21>`_)
   * Remove old rplidar driver in favor of the component version
   * Lint the source
