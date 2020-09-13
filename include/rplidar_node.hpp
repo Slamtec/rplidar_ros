@@ -55,7 +55,7 @@ using LaserScan = sensor_msgs::msg::LaserScan;
 using LaserScanPub = rclcpp::Publisher<LaserScan>::SharedPtr;
 using StartMotorService = rclcpp::Service<std_srvs::srv::Empty>::SharedPtr;
 using StopMotorService = rclcpp::Service<std_srvs::srv::Empty>::SharedPtr;
-using RPlidarDriver =  rp::standalone::rplidar::RPlidarDriver;
+using RPlidarDriver = rp::standalone::rplidar::RPlidarDriver;
 using RplidarScanMode = rp::standalone::rplidar::RplidarScanMode;
 using Clock = rclcpp::Clock::SharedPtr;
 using ResponseNodeArray = std::unique_ptr<rplidar_response_measurement_node_hq_t[]>;
@@ -73,9 +73,9 @@ constexpr double deg_2_rad(double x)
   return x * M_PI / 180.0;
 }
 
-static float getAngle(const rplidar_response_measurement_node_hq_t& node)
+static float getAngle(const rplidar_response_measurement_node_hq_t & node)
 {
-    return node.angle_z_q14 * 90.f / 16384.f;
+  return node.angle_z_q14 * 90.f / 16384.f;
 }
 
 class RPLIDAR_ROS_PUBLIC rplidar_node : public rclcpp::Node

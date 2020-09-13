@@ -54,7 +54,8 @@ rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
   scan_mode_ = this->declare_parameter("scan_mode", std::string());
   topic_name_ = this->declare_parameter("topic_name", std::string("scan"));
 
-  RCLCPP_INFO(this->get_logger(),
+  RCLCPP_INFO(
+    this->get_logger(),
     "RPLIDAR running on ROS 2 package rplidar_ros. SDK Version: '%s'", RPLIDAR_SDK_VERSION);
 
   /* initialize SDK */
@@ -71,7 +72,8 @@ rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
   if (channel_type_ == "tcp") {
     // make connection...
     if (IS_FAIL(m_drv->connect(tcp_ip_.c_str(), (_u32)tcp_port_))) {
-      RCLCPP_ERROR(this->get_logger(),
+      RCLCPP_ERROR(
+        this->get_logger(),
         "Error, cannot bind to the specified TCP host '%s:%ud'",
         tcp_ip_.c_str(), static_cast<unsigned int>(tcp_port_));
       RPlidarDriver::DisposeDriver(m_drv);
@@ -177,7 +179,7 @@ void rplidar_node::publish_scan(
     }
     if (flip_x_axis_) {
       if (apply_index >= scan_midpoint) {
-        apply_index = apply_index-scan_midpoint;
+        apply_index = apply_index - scan_midpoint;
       } else {
         apply_index = apply_index + scan_midpoint;
       }
@@ -270,29 +272,33 @@ bool rplidar_node::set_scan_mode()
   u_result op_result;
   RplidarScanMode current_scan_mode;
   if (scan_mode_.empty()) {
-    op_result = m_drv->startScan(false /* not force scan */, true /* use typical scan mode */, 0,
-        &current_scan_mode);
+    op_result = m_drv->startScan(
+      false /* not force scan */, true /* use typical scan mode */, 0,
+      &current_scan_mode);
   } else {
     std::vector<RplidarScanMode> allSupportedScanModes;
     op_result = m_drv->getAllSupportedScanModes(allSupportedScanModes);
     if (IS_OK(op_result)) {
-      auto iter = std::find_if(allSupportedScanModes.begin(), allSupportedScanModes.end(),
-          [this](auto s1) {
-            return std::string(s1.scan_mode) == scan_mode_;
-          });
+      auto iter = std::find_if(
+        allSupportedScanModes.begin(), allSupportedScanModes.end(),
+        [this](auto s1) {
+          return std::string(s1.scan_mode) == scan_mode_;
+        });
       if (iter == allSupportedScanModes.end()) {
         RCLCPP_ERROR(
           this->get_logger(), "scan mode `%s' is not supported by lidar, supported modes ('%zd'):",
           scan_mode_.c_str(), allSupportedScanModes.size());
         for (const auto & it : allSupportedScanModes) {
-          RCLCPP_ERROR(this->get_logger(), "%s: max_distance: %.1f m, Point number: %.1fK",
+          RCLCPP_ERROR(
+            this->get_logger(), "%s: max_distance: %.1f m, Point number: %.1fK",
             it.scan_mode, it.max_distance, (1000 / it.us_per_sample));
         }
         op_result = RESULT_OPERATION_FAIL;
         return false;
       } else {
-        op_result = m_drv->startScanExpress(false /* not force scan */, iter->id, 0,
-            &current_scan_mode);
+        op_result = m_drv->startScanExpress(
+          false /* not force scan */, iter->id, 0,
+          &current_scan_mode);
       }
     }
   }
@@ -341,8 +347,10 @@ void rplidar_node::publish_loop()
     if (angle_compensate_) {
       const int angle_compensate_nodes_count = 360 * m_angle_compensate_multiple;
       int angle_compensate_offset = 0;
-      auto angle_compensate_nodes = std::make_unique<rplidar_response_measurement_node_hq_t[]>(angle_compensate_nodes_count);
-      memset(angle_compensate_nodes.get(), 0,
+      auto angle_compensate_nodes = std::make_unique<rplidar_response_measurement_node_hq_t[]>(
+        angle_compensate_nodes_count);
+      memset(
+        angle_compensate_nodes.get(), 0,
         angle_compensate_nodes_count * sizeof(rplidar_response_measurement_node_hq_t));
 
       size_t i = 0, j = 0;
