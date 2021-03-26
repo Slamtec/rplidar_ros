@@ -59,6 +59,7 @@ public:
     virtual u_result startScan(bool force, bool useTypicalScan, _u32 options = 0, RplidarScanMode* outUsedScanMode = NULL);
     virtual u_result startScanExpress(bool force, _u16 scanMode, _u32 options = 0, RplidarScanMode* outUsedScanMode = NULL, _u32 timeout = DEFAULT_TIMEOUT);
 
+
     virtual u_result getHealth(rplidar_response_device_health_t & health, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result getDeviceInfo(rplidar_response_device_info_t & info, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result checkIfTofLidar(bool & isTofLidar, _u32 timeout = DEFAULT_TIMEOUT);
@@ -91,6 +92,7 @@ protected:
     virtual u_result _waitNode(rplidar_response_measurement_node_t * node, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result  _cacheCapsuledScanData();
     virtual u_result _waitCapsuledNode(rplidar_response_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
+    virtual int _getSyncBitByAngle(const int current_angle_q16, const int angleInc_q16);
     virtual void     _capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
     virtual void     _dense_capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
     
@@ -116,6 +118,7 @@ protected:
     _u16                    _cached_sampleduration_std;
     _u16                    _cached_sampleduration_express;
     _u8                     _cached_express_flag;
+    float                   _cached_current_us_per_sample;
 
     rplidar_response_capsule_measurement_nodes_t _cached_previous_capsuledata;
     rplidar_response_dense_capsule_measurement_nodes_t _cached_previous_dense_capsuledata;
@@ -123,6 +126,7 @@ protected:
     rplidar_response_hq_capsule_measurement_nodes_t _cached_previous_Hqdata;
     bool                                         _is_previous_capsuledataRdy;
     bool                                         _is_previous_HqdataRdy;
+    bool                                         _syncBit_is_finded;
 
 	
 
