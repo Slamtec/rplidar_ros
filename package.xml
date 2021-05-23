@@ -1,20 +1,18 @@
 <?xml version="1.0"?>
-<package>
-  <name>rplidar_ros</name>
-  <version>1.10.0</version>
-  <description>The rplidar ros package, support rplidar A2/A1 and A3/S1</description>
-
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rplidar_ros2</name>
+  <version>1.0.1</version>
+  <description>
+    The rplidar ros2 package, support rplidar A2/A1 and A3/S1
+  </description>
   <maintainer email="ros@slamtec.com">Slamtec ROS Maintainer</maintainer>
   <license>BSD</license>
-
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rosconsole</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_srvs</build_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rosconsole</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>std_srvs</run_depend>
-
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>std_srvs</depend>
+  <depend>sensor_msgs</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

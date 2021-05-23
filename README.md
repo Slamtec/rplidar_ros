@@ -1,7 +1,6 @@
-RPLIDAR ROS package
-=====================================================================
+# RPLIDAR ROS2 Package
 
-ROS node and test application for RPLIDAR
+ROS2 node for RPLIDAR
 
 Visit following Website for more details about RPLIDAR:
 
@@ -13,39 +12,63 @@ rplidar SDK: https://github.com/Slamtec/rplidar_sdk
 
 rplidar Tutorial:  https://github.com/robopeak/rplidar_ros/wiki
 
-How to build rplidar ros package
-=====================================================================
-    1) Clone this project to your catkin's workspace src folder
-    2) Running catkin_make to build rplidarNode and rplidarNodeClient
+## How to [install ROS2](https://index.ros.org/doc/ros2/Installation)
+[ubuntu](https://docs.ros.org/en/foxy/Installation/Ubuntu-Install-Debians.html)
 
-How to run rplidar ros package
-=====================================================================
-There're two ways to run rplidar ros package
+## How to configuring your ROS 2 environment
+[Configuring your ROS 2 environment](https://docs.ros.org/en/foxy/Tutorials/Configuring-ROS2-Environment.html)
 
-I. Run rplidar node and view in the rviz
-------------------------------------------------------------
-roslaunch rplidar_ros view_rplidar.launch (for RPLIDAR A1/A2)
-,
-roslaunch rplidar_ros view_rplidar_a3.launch (for RPLIDAR A3)
-or
-roslaunch rplidar_ros view_rplidar_s1.launch (for RPLIDAR S1)
+## How to Create a ROS2 workspace
+[Create a workspace](https://docs.ros.org/en/foxy/Tutorials/Workspace/Creating-A-Workspace.html)
 
-You should see rplidar's scan result in the rviz.
+## Compile & Install rplidar_ros2 package
 
-II. Run rplidar node and view using test application
-------------------------------------------------------------
-roslaunch rplidar_ros rplidar.launch (for RPLIDAR A1/A2)
-,
-roslaunch rplidar_ros rplidar_a3.launch (for RPLIDAR A3)
-or
-roslaunch rplidar_ros rplidar_s1.launch (for RPLIDAR S1)
+1. Clone rplidar_ros2 package from github : 
 
-rosrun rplidar_ros rplidarNodeClient
+   ``
 
-You should see rplidar's scan result in the console
+2. Build rplidar_ros2 package :
+
+   ```
+   cd <your_own_ros2_ws>
+   colcon build --symlink-install
+   ```
+   if you find output like "colcon:command not found",you need separate [install colcon](https://docs.ros.org/en/foxy/Tutorials/Colcon-Tutorial.html#install-colcon) build tools. 
+
+  
+3. Package environment setup :
+    ```
+    source ./install/setup.bash
+    ```
+
+    Note: Add permanent workspace environment variables.
+    It's convenientif the ROS2 environment variables are automatically added to your bash session every time a new shell is launched:
+    ```
+    $echo "source <your_own_ros2_ws>/install/setup.bash" >> ~/.bashrc
+    $source ~/.bashrc
+    ```
+
+## Run rplidar_ros2
+
+### Run rplidar node and view in the rviz
+
+The command for RPLIDAR A1/A2 is : 
+
+ `ros2 launch rplidar_ros2 view_rplidar_launch.py`
+
+The command for RPLIDAR A3 is : 
+
+ `ros2 launch rplidar_ros2 view_rplidar_a3_launch.py`
+
+The command for RPLIDAR S1 is : 
+
+ `ros2 launch rplidar_ros2 view_rplidar_s1_launch.py`
+
+The command for RPLIDAR S1(TCP connection) is : 
+
+ `ros2 launch rplidar_ros2 view_rplidar_s1_tcp_launch.py`
 
 Notice: the different is serial_baudrate between A1/A2 and A3/S1
 
-RPLidar frame
-=====================================================================
+## RPLidar frame
 RPLidar frame must be broadcasted according to picture shown in rplidar-frame.png
