@@ -120,6 +120,8 @@ bool RPlidarDriverImplCommon::isConnected()
 
 u_result RPlidarDriverImplCommon::reset(_u32 timeout)
 {
+    (void)timeout;
+
     u_result ans;
 
     {
@@ -273,6 +275,7 @@ u_result RPlidarDriverImplCommon::getDeviceInfo(rplidar_response_device_info_t &
 
 u_result RPlidarDriverImplCommon::checkIfTofLidar(bool & isTofLidar, _u32 timeout)
 {
+    (void)timeout;
     isTofLidar = _isTofLidar;
     return RESULT_OK;
 }
@@ -866,10 +869,10 @@ void     RPlidarDriverImplCommon::_dense_capsuleToNormal(const rplidar_response_
         int currentAngle_raw_q16 = (prevStartAngle_q8 << 8);
         for (size_t pos = 0; pos < _countof(_cached_previous_dense_capsuledata.cabins); ++pos)
         {
-            int dist_q2;
+            unsigned int dist_q2;
             int angle_q6;
             int syncBit;
-            const int dist = static_cast<const int>(_cached_previous_dense_capsuledata.cabins[pos].distance);
+            const unsigned int dist = static_cast<unsigned int>(_cached_previous_dense_capsuledata.cabins[pos].distance);
             dist_q2 = dist << 2;
             angle_q6 = (currentAngle_raw_q16 >> 10);
             syncBit = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < angleInc_q16) ? 1 : 0;
@@ -888,8 +891,6 @@ void     RPlidarDriverImplCommon::_dense_capsuleToNormal(const rplidar_response_
             node.dist_mm_q2 = dist_q2;
 
             nodebuffer[nodeCount++] = node;
-            
-
         }
     }
 
@@ -993,7 +994,7 @@ static _u32 _crc32cal(_u32 crc, void* input, _u16 len)
     _u8 index;
     _u8* pch;
     pch = (unsigned char*)input;
-    _u8 leftBytes = 4 - len & 0x3;
+    _u8 leftBytes = 4 - (len & 0x3);
 
     for (i = 0; i<len; i++){
         index = (unsigned char)(crc^*pch);
@@ -1452,6 +1453,8 @@ u_result RPlidarDriverImplCommon::getScanModeName(char* modeName, _u16 scanModeI
 
 u_result RPlidarDriverImplCommon::getAllSupportedScanModes(std::vector<RplidarScanMode>& outModes, _u32 timeoutInMs)
 {
+    (void)timeoutInMs;
+
     u_result ans;
     bool confProtocolSupported = false;
     ans = checkSupportConfigCommands(confProtocolSupported);
@@ -1549,6 +1552,8 @@ u_result RPlidarDriverImplCommon::getScanModeCount(_u16& modeCount, _u32 timeout
 
 u_result RPlidarDriverImplCommon::startScan(bool force, bool useTypicalScan, _u32 options, RplidarScanMode* outUsedScanMode)
 {
+    (void)options;
+
     if(_isScanning)return RESULT_ALREADY_DONE;
     u_result ans;
 
@@ -1773,6 +1778,8 @@ u_result RPlidarDriverImplCommon::startScanExpress(bool force, _u16 scanMode, _u
 
 u_result RPlidarDriverImplCommon::stop(_u32 timeout)
 {
+    (void)timeout;
+
     u_result ans;
     _disableDataGrabbing();
 
@@ -2161,6 +2168,7 @@ u_result RPlidarDriverImplCommon::setMotorPWM(_u16 pwm)
 
 u_result RPlidarDriverImplCommon::setLidarSpinSpeed(_u16 rpm, _u32 timeout)
 {
+    (void)timeout;
     if (!_isTofLidar) return RESULT_OPERATION_NOT_SUPPORT;
 
     u_result ans;
@@ -2239,6 +2247,8 @@ void RPlidarDriverSerial::disconnect()
 
 u_result RPlidarDriverSerial::connect(const char * port_path, _u32 baudrate, _u32 flag)
 {
+    (void)flag;
+
     if (isConnected()) return RESULT_ALREADY_DONE;
 
     if (!_chanDev) return RESULT_INSUFFICIENT_MEMORY;
@@ -2281,6 +2291,8 @@ void RPlidarDriverTCP::disconnect()
 
 u_result RPlidarDriverTCP::connect(const char * ipStr, _u32 port, _u32 flag)
 {
+    (void)flag;
+
     if (isConnected()) return RESULT_ALREADY_DONE;
 
     if (!_chanDev) return RESULT_INSUFFICIENT_MEMORY;

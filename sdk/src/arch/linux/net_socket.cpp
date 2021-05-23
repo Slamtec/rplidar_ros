@@ -167,7 +167,7 @@ u_result SocketAddress::getAddressAsString(char * buffer, size_t buffersize) con
 
         break;
     }
-    return ans<=0?RESULT_OPERATION_FAIL:RESULT_OK;
+    return ans==0?RESULT_OPERATION_FAIL:RESULT_OK;
 }
 
 
@@ -435,7 +435,7 @@ public:
     virtual u_result send(const void * buffer, size_t len) 
     {
         size_t ans = ::send( _socket_fd, buffer, len, MSG_NOSIGNAL);
-        if (ans == (int)len) {
+        if (ans == len) {
             return RESULT_OK;
         } else {
             switch (errno) {
@@ -723,7 +723,7 @@ public:
         assert(addr);
         size_t ans = ::sendto( _socket_fd, buffer, len, 0, addr, sizeof(sockaddr_storage));
         if (ans != (size_t)-1) {
-            assert(ans == (int)len);
+            assert(ans == (size_t)len);
             return RESULT_OK;
         } else {
             switch (errno) {

@@ -136,6 +136,9 @@ class RPLidarScanPublisher : public rclcpp::Node
     bool stop_motor(const std::shared_ptr<std_srvs::srv::Empty::Request> req,
                     std::shared_ptr<std_srvs::srv::Empty::Response> res)
     {
+        (void)req;
+        (void)res;
+
         if(!drv)
             return false;
 
@@ -147,16 +150,29 @@ class RPLidarScanPublisher : public rclcpp::Node
     bool start_motor(const std::shared_ptr<std_srvs::srv::Empty::Request> req,
                     std::shared_ptr<std_srvs::srv::Empty::Response> res)
     {
+        (void)req;
+        (void)res;
+
         if(!drv)
            return false;
         if(drv->isConnected())
         {
             RCLCPP_DEBUG(this->get_logger(),"Start motor");
             u_result ans=drv->startMotor();
+            if (IS_FAIL(ans)) {
+                RCLCPP_WARN(this->get_logger(), "Failed to start motor: %08x", ans);
+                return false;
+            }
         
             ans=drv->startScan(0,1);
+            if (IS_FAIL(ans)) {
+                RCLCPP_WARN(this->get_logger(), "Failed to start scan: %08x", ans);
+            }
+        } else {
+            RCLCPP_INFO(this->get_logger(),"lost connection");
+            return false;
         }
-        else RCLCPP_INFO(this->get_logger(),"lost connection");
+
         return true;
     }
 
@@ -346,10 +362,10 @@ public:
                         //const int angle_compensate_multiple = 1;
                         const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                         int angle_compensate_offset = 0;
-                        rplidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
+                        auto angle_compensate_nodes = new rplidar_response_measurement_node_hq_t[angle_compensate_nodes_count];
                         memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_hq_t));
 
-                        int i = 0, j = 0;
+                        size_t i = 0, j = 0;
                         for( ; i < count; i++ ) {
                             if (nodes[i].dist_mm_q2 != 0) {
                                 float angle = getAngle(nodes[i]);
@@ -369,6 +385,11 @@ public:
                                 start_scan_time, scan_duration, inverted,
                                 angle_min, angle_max, max_distance,
                                 frame_id);
+
+                        if (angle_compensate_nodes) {
+                            delete[] angle_compensate_nodes;
+                            angle_compensate_nodes = nullptr;
+                        }
                     } else {
                         int start_node = 0, end_node = 0;
                         int i = 0;
@@ -386,7 +407,7 @@ public:
                                 start_scan_time, scan_duration, inverted,
                                 angle_min, angle_max, max_distance,
                                 frame_id);
-                }
+                    }
                 } else if (op_result == RESULT_OPERATION_FAIL) {
                     // All the data is invalid, just publish them
                     float angle_min = DEG2RAD(0.0f);
@@ -406,7 +427,8 @@ public:
         drv->stop();
         RCLCPP_INFO(this->get_logger(),"Stop motor");
         RPlidarDriver::DisposeDriver(drv);
-        //rclcpp::shutdown();
+
+        return 0;
     }
 
 
@@ -424,7 +446,7 @@ public:
     bool inverted = false;
     bool angle_compensate = true;
     float max_distance = 8.0;
-    int angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
+    size_t angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
     std::string scan_mode;
 
     RPlidarDriver * drv;    
@@ -432,6 +454,7 @@ public:
 
 void ExitHandler(int sig)
 {
+    (void)sig;
     need_exit = true;
 }
 
