@@ -25,11 +25,13 @@ rplidar Tutorial:  https://github.com/robopeak/rplidar_ros/wiki
 
 1. Clone rplidar_ros2 package from github : 
 
-   ``
+   ```bash
+   git clone -b ros2 https://github.com/slamtec/rplidar_ros.git
+   ``` 
 
 2. Build rplidar_ros2 package :
 
-   ```
+   ```bash
    cd <your_own_ros2_ws>
    colcon build --symlink-install
    ```
@@ -37,13 +39,13 @@ rplidar Tutorial:  https://github.com/robopeak/rplidar_ros/wiki
 
   
 3. Package environment setup :
-    ```
+    ```bash
     source ./install/setup.bash
     ```
 
     Note: Add permanent workspace environment variables.
     It's convenientif the ROS2 environment variables are automatically added to your bash session every time a new shell is launched:
-    ```
+    ```bash
     $echo "source <your_own_ros2_ws>/install/setup.bash" >> ~/.bashrc
     $source ~/.bashrc
     ```
@@ -54,19 +56,27 @@ rplidar Tutorial:  https://github.com/robopeak/rplidar_ros/wiki
 
 The command for RPLIDAR A1/A2 is : 
 
- `ros2 launch rplidar_ros2 view_rplidar_launch.py`
+```bash
+ros2 launch rplidar_ros2 view_rplidar_launch.py
+```
 
 The command for RPLIDAR A3 is : 
 
- `ros2 launch rplidar_ros2 view_rplidar_a3_launch.py`
+```bash
+ros2 launch rplidar_ros2 view_rplidar_a3_launch.py
+```
 
 The command for RPLIDAR S1 is : 
 
- `ros2 launch rplidar_ros2 view_rplidar_s1_launch.py`
+```bash
+ros2 launch rplidar_ros2 view_rplidar_s1_launch.py
+```
 
 The command for RPLIDAR S1(TCP connection) is : 
 
- `ros2 launch rplidar_ros2 view_rplidar_s1_tcp_launch.py`
+```bash
+ros2 launch rplidar_ros2 view_rplidar_s1_tcp_launch.py
+```
 
 Notice: the different is serial_baudrate between A1/A2 and A3/S1
 
