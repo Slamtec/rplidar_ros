@@ -16,6 +16,11 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
+Forthcoming
+-----------
+* Remove test_rplidar.launch.py, since relevant executables no longer exist (`#24 <https://github.com/allenh1/rplidar_ros/issues/24>`_)
+* Contributors: Hunter L. Allen
+
 2.0.1 (2020-09-13)
 ------------------
 * Remove old driver (`#21 <https://github.com/allenh1/rplidar_ros/issues/21>`_)
