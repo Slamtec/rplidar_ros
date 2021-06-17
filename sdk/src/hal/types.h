@@ -7,29 +7,14 @@
 
 //Basic types
 //
+#include <stdint.h>
+
 #ifdef WIN32
-
-//fake stdint.h for VC only
-
-typedef signed   char     int8_t;
-typedef unsigned char     uint8_t;
-
-typedef __int16           int16_t;
-typedef unsigned __int16  uint16_t;
-
-typedef __int32           int32_t;
-typedef unsigned __int32  uint32_t;
-
-typedef __int64           int64_t;
-typedef unsigned __int64  uint64_t;
-
 
 #define RPMODULE_EXPORT  __declspec(dllexport)
 #define RPMODULE_IMPORT  __declspec(dllimport)
 
 #else
-
-#include <stdint.h>
 
 #define RPMODULE_EXPORT
 #define RPMODULE_IMPORT

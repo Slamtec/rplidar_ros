@@ -32,11 +32,11 @@
  *
  */
 
-#if defined(_WIN32)
-#include "arch\win32\arch_win32.h"
-#elif defined(_MACOS)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#include "arch/win32/arch_win32.h"
+#elif __APPLE__
 #include "arch/macOS/arch_macOS.h"
-#elif defined(__GNUC__)
+#elif __linux__
 #include "arch/linux/arch_linux.h"
 #else
 #error "unsupported target"
