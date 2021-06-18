@@ -353,8 +353,11 @@ public:
             end_scan_time = this->now();
             scan_duration = (end_scan_time - start_scan_time).seconds();
 
+            RCLCPP_DEBUG(this->get_logger(), "result of grabScanDataHq = %d", op_result);
+
             if (op_result == RESULT_OK) {
                 op_result = drv->ascendScanData(nodes, count);
+                RCLCPP_DEBUG(this->get_logger(), "result of ascendScanData = %d", op_result);
                 float angle_min = DEG2RAD(0.0f);
                 float angle_max = DEG2RAD(359.0f);
                 if (op_result == RESULT_OK) {
