@@ -353,18 +353,18 @@ public:
             end_scan_time = this->now();
             scan_duration = (end_scan_time - start_scan_time).seconds();
 
+            RCLCPP_DEBUG(this->get_logger(), "result of grabScanDataHq = %d", op_result);
+
             if (op_result == RESULT_OK) {
                 op_result = drv->ascendScanData(nodes, count);
+                RCLCPP_DEBUG(this->get_logger(), "result of ascendScanData = %d", op_result);
                 float angle_min = DEG2RAD(0.0f);
                 float angle_max = DEG2RAD(359.0f);
                 if (op_result == RESULT_OK) {
                     if (angle_compensate) {
-                        //const int angle_compensate_multiple = 1;
                         const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
+                        auto angle_compensate_nodes = std::vector<rplidar_response_measurement_node_hq_t>(angle_compensate_nodes_count);
                         int angle_compensate_offset = 0;
-                        auto angle_compensate_nodes = new rplidar_response_measurement_node_hq_t[angle_compensate_nodes_count];
-                        memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(rplidar_response_measurement_node_hq_t));
-
                         size_t i = 0, j = 0;
                         for( ; i < count; i++ ) {
                             if (nodes[i].dist_mm_q2 != 0) {
@@ -381,15 +381,11 @@ public:
                             }
                         }
     
-                        publish_scan(scan_pub, angle_compensate_nodes, angle_compensate_nodes_count,
+                        publish_scan(scan_pub, angle_compensate_nodes.data(), angle_compensate_nodes_count,
                                 start_scan_time, scan_duration, inverted,
                                 angle_min, angle_max, max_distance,
                                 frame_id);
 
-                        if (angle_compensate_nodes) {
-                            delete[] angle_compensate_nodes;
-                            angle_compensate_nodes = nullptr;
-                        }
                     } else {
                         int start_node = 0, end_node = 0;
                         int i = 0;

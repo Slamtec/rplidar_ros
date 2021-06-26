@@ -18,13 +18,59 @@ if(MSVC)
   )
 endif()
 
-set(RPLIDAR_SDK_PATH "./sdk/")
+set(RPLIDAR_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/sdk)
 
-FILE(GLOB RPLIDAR_SDK_SRC 
-  "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"
-  "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
-  "${RPLIDAR_SDK_PATH}/src/*.cpp"
+set(RPLIDAR_SDK_SRC 
+  ${RPLIDAR_SDK_PATH}/src/hal/abs_rxtx.h
+  ${RPLIDAR_SDK_PATH}/src/hal/assert.h
+  ${RPLIDAR_SDK_PATH}/src/hal/byteops.h
+  ${RPLIDAR_SDK_PATH}/src/hal/event.h
+  ${RPLIDAR_SDK_PATH}/src/hal/locker.h
+  ${RPLIDAR_SDK_PATH}/src/hal/socket.h
+  ${RPLIDAR_SDK_PATH}/src/hal/thread.cpp
+  ${RPLIDAR_SDK_PATH}/src/hal/thread.h
+  ${RPLIDAR_SDK_PATH}/src/hal/types.h
+  ${RPLIDAR_SDK_PATH}/src/hal/util.h
+
+  ${RPLIDAR_SDK_PATH}/src/rplidar_driver.cpp
+  ${RPLIDAR_SDK_PATH}/src/rplidar_driver_impl.h
+  ${RPLIDAR_SDK_PATH}/src/rplidar_driver_serial.h
+  ${RPLIDAR_SDK_PATH}/src/rplidar_driver_TCP.h
+  ${RPLIDAR_SDK_PATH}/src/sdkcommon.h
 )
+
+if (UNIX)
+    LIST(APPEND RPLIDAR_SDK_SRC
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/arch_linux.h
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/net_serial.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/net_serial.h
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/net_socket.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/thread.hpp
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/timer.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/linux/timer.h
+        )
+elseif(WIN32)
+    LIST(APPEND RPLIDAR_SDK_SRC
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/arch_win32.h
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/net_serial.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/net_serial.h
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/net_socket.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/timer.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/timer.h
+        ${RPLIDAR_SDK_PATH}/src/arch/win32/winthread.hpp
+        )
+elseif(APPLE)
+    LIST(APPEND RPLIDAR_SDK_SRC 
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/arch_macOS.h
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/net_serial.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/net_serial.h
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/net_socket.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/thread.hpp
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/timer.cpp
+        ${RPLIDAR_SDK_PATH}/src/arch/macOS/timer.h        
+        )
+endif()
+
 
 ################################################################################
 # Find ament packages and libraries for ament and system dependencies
