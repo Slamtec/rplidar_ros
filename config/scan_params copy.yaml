@@ -1,0 +1,9 @@
+rplidar_params:
+  fov: 240
+  rotation: 0
+  range: {min: 0.05, max: 30.0}
+  # reduction_method: '1-Pooling'
+  # output_samples: 1195
+  reduction_method: 'None' 
+  output_samples: 'None' 
+  intensities: 47

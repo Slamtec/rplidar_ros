@@ -1,0 +1,21 @@
+<launch>
+  
+  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen">
+  <param name="serial_port"         type="string" value="/dev/ttyUSB0"/>  
+  <param name="serial_baudrate"     type="int"    value="1000000"/>
+  <param name="frame_id"            type="string" value="laser_link"/>
+  <param name="inverted"            type="bool"   value="false"/>
+  <param name="angle_compensate"    type="bool"   value="true"/>
+  <param name="scan_mode"           type="string" value="Standard"/>
+  <param name="range_min" type="double" value="0.05"/> <!-- Distância mínima em metros -->
+  <param name="range_max" type="double" value="30.0"/>   
+  <param name="scan_frequency"      type="double" value="10.0"/>
+  </node>
+
+  <rosparam file="$(find rplidar_ros)/config/scan_params.yaml"/>
+  
+  <node pkg="rplidar_ros" name="rplidar_ros" type="rplidar_scan.py" output="screen" clear_params="true"/>
+
+  <node pkg="rplidar_ros" name="scan_filter_node" type="scan_filter_regressor_V1.0.py"/>
+
+</launch>

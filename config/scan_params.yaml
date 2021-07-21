@@ -1,0 +1,34 @@
+rplidar_params:
+  fov: 240
+  rotation: 0
+  range: {min: 0.14, max: 30.0}
+  # reduction_method: '1-Pooling'
+  # output_samples: 1195
+  reduction_method: 'none'
+  output_samples: 'None' 
+  intensities: 47
+
+  #reduction_method only admit "[max/min/mean/(int)]-pooling", "resample", or "None"
+ #----------------------------------------------------------------------------------------------------#
+  # reducion method 1
+  # reduction_method: 'resample'
+  # resample_interval: 2  # Mantém cada segundo ponto de dados
+  # interpolation_method: "linear"  # Usa interpolação linear / suavização moderada / pode n capturar variações complexas
+  # interpolation_method: "spline"  # Usa interpolação spline / suavização avançada / captura variações precisa e suaves / mais custoso computacionalmente.
+  # interpolation_method: "nearest"  # Usa interpolação por vizinho mais próximo / Mantém os valores originais / resulta em dados menos suaves, aparencia em blocos
+
+  # Comentários:
+  # - Intervalo pequeno (2) mantém mais detalhes dos dados originais.
+  # - Reduz levemente a quantidade de dados, melhorando a eficiência sem perder muita precisão.
+  # - Adequado para pré-processamento e visualização inicial, mantendo uma representação detalhada.
+ #----------------------------------------------------------------------------------------------------#
+  # reduction method 2
+  # reduction_method: 'mean(2)-pooling'
+  # pooling_region_size: 2  # Agrupa pontos em regiões de 2x2
+  # pooling_method: "average"  # Usa averaje pooling
+  
+
+  # Comentários:
+  # - Seleciona o valor médio dentro de cada bloco 2x2.
+  # - Suaviza os dados, útil para obter uma representação geral suave.
+  # - Esse metodo substitui 2 blocos vizinho em apena 1 bloco que representa os dois, diminuindo a quantidade de informação
