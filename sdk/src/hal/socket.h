@@ -135,7 +135,7 @@ public:
 
     static DGramSocket * CreateSocket(socket_family_t family = SOCKET_FAMILY_INET);
         
-    
+    virtual u_result setPairAddress(const SocketAddress* pairAddress) = 0;
     
     virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len) = 0;
    

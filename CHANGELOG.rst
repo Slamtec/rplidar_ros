@@ -1,6 +1,11 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.0.0 (2021-10-8)
+------------------
+* Update RPLIDAR SDK to 2.0.0
+* [new feature] 1.redesign the skelton of the sdk. 2.support Rplidar S2
+* Contributors: tony,WubinXia
 
 1.10.0 (2019-02-22)
 ------------------
