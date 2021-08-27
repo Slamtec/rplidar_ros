@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(rplidar_ros)
 
 set(RPLIDAR_SDK_PATH "./sdk/")
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 FILE(GLOB RPLIDAR_SDK_SRC 
   "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"

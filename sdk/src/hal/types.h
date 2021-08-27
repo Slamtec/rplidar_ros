@@ -88,7 +88,6 @@ typedef uint32_t u_result;
 #define RESULT_OK                       0
 #define RESULT_FAIL_BIT                 0x80000000
 #define RESULT_ALREADY_DONE             0x20
-#define RESULT_REMAINING_DATA           0x21
 #define RESULT_INVALID_DATA             (0x8000 | RESULT_FAIL_BIT)
 #define RESULT_OPERATION_FAIL           (0x8001 | RESULT_FAIL_BIT)
 #define RESULT_OPERATION_TIMEOUT        (0x8002 | RESULT_FAIL_BIT)

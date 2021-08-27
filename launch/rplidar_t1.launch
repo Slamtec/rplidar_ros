@@ -1,0 +1,10 @@
+<launch>
+  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen">
+  <param name="channel_type"        type="string" value="udp"/>  
+  <param name="udp_ip"              type="string" value="192.168.11.2"/>  
+  <param name="udp_port"            type="int"    value="8089"/>
+  <param name="frame_id"            type="string" value="laser"/>
+  <param name="inverted"            type="bool"   value="false"/>
+  <param name="angle_compensate"    type="bool"   value="true"/>
+  </node>
+</launch>

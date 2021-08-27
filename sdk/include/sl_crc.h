@@ -1,12 +1,11 @@
 /*
- *  RPLIDAR SDK
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
+* Slamtec LIDAR SDK
+*
+* sl_crc.h
+*
+* Copyright (c) 2020 Shanghai Slamtec Co., Ltd.
+*/
+
 /*
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,31 +31,13 @@
  *
  */
 
-#include "sdkcommon.h"
-#include <mmsystem.h>
-#pragma comment(lib, "Winmm.lib")
+#pragma once
 
-namespace rp{ namespace arch{
+#include "sl_lidar_cmd.h"
 
-static LARGE_INTEGER _current_freq;
-
-void HPtimer_reset()
-{
-    BOOL ans=QueryPerformanceFrequency(&_current_freq);
-    _current_freq.QuadPart/=1000;
-}
-
-_u32 getHDTimer()
-{
-    LARGE_INTEGER current;
-    QueryPerformanceCounter(&current);
-
-    return (_u32)(current.QuadPart/_current_freq.QuadPart);
-}
-
-BEGIN_STATIC_CODE(timer_cailb)
-{
-    HPtimer_reset();
-}END_STATIC_CODE(timer_cailb)
-
+namespace sl {namespace crc32 {
+    sl_u32 bitrev(sl_u32 input, sl_u16 bw);//reflect
+    void init(sl_u32 poly); // table init
+    sl_u32 cal(sl_u32 crc, void* input, sl_u16 len);
+    sl_result getResult(sl_u8 *ptr, sl_u32 len);
 }}
