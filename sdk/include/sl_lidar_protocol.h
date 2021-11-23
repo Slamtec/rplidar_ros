@@ -1,12 +1,11 @@
 /*
- *  RPLIDAR SDK
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
+* Slamtec LIDAR SDK
+*
+* sl_lidar_protocol.h
+*
+* Copyright (c) 2020 Shanghai Slamtec Co., Ltd.
+*/
+
 /*
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,31 +31,42 @@
  *
  */
 
-#include "sdkcommon.h"
-#include <mmsystem.h>
-#pragma comment(lib, "Winmm.lib")
+#pragma once
 
-namespace rp{ namespace arch{
+#include "sl_types.h"
 
-static LARGE_INTEGER _current_freq;
+#define SL_LIDAR_CMD_SYNC_BYTE              0xA5
+#define SL_LIDAR_CMDFLAG_HAS_PAYLOAD        0x80
 
-void HPtimer_reset()
+#define SL_LIDAR_ANS_SYNC_BYTE1             0xA5
+#define SL_LIDAR_ANS_SYNC_BYTE2             0x5A
+
+#define SL_LIDAR_ANS_PKTFLAG_LOOP           0x1
+
+#define SL_LIDAR_ANS_HEADER_SIZE_MASK       0x3FFFFFFF
+#define SL_LIDAR_ANS_HEADER_SUBTYPE_SHIFT   (30)
+
+#if defined(_WIN32)
+#pragma pack(1)
+#endif
+
+typedef struct sl_lidar_cmd_packet_t
 {
-    BOOL ans=QueryPerformanceFrequency(&_current_freq);
-    _current_freq.QuadPart/=1000;
-}
+    sl_u8 syncByte; //must be SL_LIDAR_CMD_SYNC_BYTE
+    sl_u8 cmd_flag;
+    sl_u8 size;
+    sl_u8 data[0];
+} __attribute__((packed)) sl_lidar_cmd_packet_t;
 
-_u32 getHDTimer()
+
+typedef struct sl_lidar_ans_header_t
 {
-    LARGE_INTEGER current;
-    QueryPerformanceCounter(&current);
+    sl_u8  syncByte1; // must be SL_LIDAR_ANS_SYNC_BYTE1
+    sl_u8  syncByte2; // must be SL_LIDAR_ANS_SYNC_BYTE2
+    sl_u32 size_q30_subtype; // see _u32 size:30; _u32 subType:2;
+    sl_u8  type;
+} __attribute__((packed)) sl_lidar_ans_header_t;
 
-    return (_u32)(current.QuadPart/_current_freq.QuadPart);
-}
-
-BEGIN_STATIC_CODE(timer_cailb)
-{
-    HPtimer_reset();
-}END_STATIC_CODE(timer_cailb)
-
-}}
+#if defined(_WIN32)
+#pragma pack()
+#endif

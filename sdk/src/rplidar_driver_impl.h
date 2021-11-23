@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2019 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -38,13 +38,10 @@ namespace rp { namespace standalone{ namespace rplidar {
     class RPlidarDriverImplCommon : public RPlidarDriver
 {
 public:
-    enum {
-        RPLIDAR_TOF_MINUM_MAJOR_ID = 5,
-    };
 
     virtual bool isConnected();     
     virtual u_result reset(_u32 timeout = DEFAULT_TIMEOUT);
-    virtual u_result clearNetSerialRxCache();
+
     virtual u_result getAllSupportedScanModes(std::vector<RplidarScanMode>& outModes, _u32 timeoutInMs = DEFAULT_TIMEOUT);
     virtual u_result getTypicalScanMode(_u16& outMode, _u32 timeoutInMs = DEFAULT_TIMEOUT);
     virtual u_result checkSupportConfigCommands(bool& outSupport, _u32 timeoutInMs = DEFAULT_TIMEOUT);
@@ -61,10 +58,8 @@ public:
 
     virtual u_result getHealth(rplidar_response_device_health_t & health, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result getDeviceInfo(rplidar_response_device_info_t & info, _u32 timeout = DEFAULT_TIMEOUT);
-    virtual u_result checkIfTofLidar(bool & isTofLidar, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result getSampleDuration_uS(rplidar_response_sample_rate_t & rateInfo, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result setMotorPWM(_u16 pwm);
-    virtual u_result setLidarSpinSpeed(_u16 rpm, _u32 timeout = DEFAULT_TIMEOUT);
     virtual u_result startMotor();
     virtual u_result stopMotor();
     virtual u_result checkMotorCtrlSupport(bool & support, _u32 timeout = DEFAULT_TIMEOUT);
@@ -92,21 +87,17 @@ protected:
     virtual u_result  _cacheCapsuledScanData();
     virtual u_result _waitCapsuledNode(rplidar_response_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
     virtual void     _capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
-    virtual void     _dense_capsuleToNormal(const rplidar_response_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
     
     //FW1.23
     virtual u_result  _cacheUltraCapsuledScanData();
     virtual u_result _waitUltraCapsuledNode(rplidar_response_ultra_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
     virtual void     _ultraCapsuleToNormal(const rplidar_response_ultra_capsule_measurement_nodes_t & capsule, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 
-    virtual u_result  _cacheHqScanData();
-    virtual u_result _waitHqNode(rplidar_response_hq_capsule_measurement_nodes_t & node, _u32 timeout = DEFAULT_TIMEOUT);
-    virtual void     _HqToNormal(const rplidar_response_hq_capsule_measurement_nodes_t & node_hq, rplidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 
     bool     _isConnected; 
     bool     _isScanning;
     bool     _isSupportingMotorCtrl;
-    bool     _isTofLidar;
+
     rplidar_response_measurement_node_hq_t   _cached_scan_node_hq_buf[8192];
     size_t                                   _cached_scan_node_hq_count;
 
@@ -115,16 +106,10 @@ protected:
 
     _u16                    _cached_sampleduration_std;
     _u16                    _cached_sampleduration_express;
-    _u8                     _cached_express_flag;
 
     rplidar_response_capsule_measurement_nodes_t _cached_previous_capsuledata;
-    rplidar_response_dense_capsule_measurement_nodes_t _cached_previous_dense_capsuledata;
     rplidar_response_ultra_capsule_measurement_nodes_t _cached_previous_ultracapsuledata;
-    rplidar_response_hq_capsule_measurement_nodes_t _cached_previous_Hqdata;
     bool                                         _is_previous_capsuledataRdy;
-    bool                                         _is_previous_HqdataRdy;
-
-	
 
     rp::hal::Locker         _lock;
     rp::hal::Event          _dataEvt;

@@ -41,4 +41,4 @@
 
 #include "rplidar_driver.h"
 
-#define RPLIDAR_SDK_VERSION  "1.12.0"
+#define SLAMTEC_LIDAR_SDK_VERSION  SL_LIDAR_SDK_VERSION

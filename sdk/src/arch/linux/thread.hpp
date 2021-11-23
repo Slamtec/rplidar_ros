@@ -128,7 +128,6 @@ Thread::priority_val_t Thread::getPriority()
 
 u_result Thread::join(unsigned long timeout)
 {
-    (void)timeout;
     if (!this->_handle) return RESULT_OK;
     
     pthread_join((pthread_t)(this->_handle), NULL);
