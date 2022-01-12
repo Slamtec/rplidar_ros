@@ -95,7 +95,7 @@ public:
         }
     }
     
-    unsigned long wait( unsigned long timeout = 0xFFFFFFFF )
+    int wait( unsigned long timeout = 0xFFFFFFFF )
     {
 #ifdef _WIN32
         switch (WaitForSingleObject(_event, timeout==0xFFFFFFF?INFINITE:(DWORD)timeout))
