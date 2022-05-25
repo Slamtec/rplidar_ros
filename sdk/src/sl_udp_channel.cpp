@@ -78,7 +78,7 @@ namespace sl {
 
         int write(const void* data, size_t size)
         {
-            return _binded_socket->sendTo(NULL, data, size);
+            return _binded_socket->sendTo(_socket, data, size);
         }
 
         int read(void* buffer, size_t size)
