@@ -167,7 +167,7 @@ u_result SocketAddress::getAddressAsString(char * buffer, size_t buffersize) con
 
         break;
     }
-    return ans<=0?RESULT_OPERATION_FAIL:RESULT_OK;
+    return nullptr == ans ? RESULT_OPERATION_FAIL : RESULT_OK;
 }
 
 
