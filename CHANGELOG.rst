@@ -16,8 +16,8 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
-Forthcoming
------------
+2.0.3 (2022-09-01)
+------------------
 * Fix build with later versions of GCC
 * Contributors: Hunter L. Allen
 
