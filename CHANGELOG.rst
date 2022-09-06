@@ -16,8 +16,8 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
-Forthcoming
------------
+2.1.0 (2022-09-06)
+------------------
 * Add auto standby mode (`#29 <https://github.com/allenh1/rplidar_ros/issues/29>`_)
   * Add auto standby mode
   Turn on/off motor based on topic subsribers
