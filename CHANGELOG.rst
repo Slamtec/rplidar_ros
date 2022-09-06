@@ -16,6 +16,19 @@ Changelog for package rplidar_ros
 * [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
 * Contributors: tony,kint
 
+Forthcoming
+-----------
+* Add auto standby mode (`#29 <https://github.com/allenh1/rplidar_ros/issues/29>`_)
+  * Add auto standby mode
+  Turn on/off motor based on topic subsribers
+  * Set auto_standby off by default
+* Fix building on Apple machines (`#30 <https://github.com/allenh1/rplidar_ros/issues/30>`_)
+* Update README & fix launch files for Foxy and up (`#26 <https://github.com/allenh1/rplidar_ros/issues/26>`_)
+  * Update README.md
+  based on modifications from youngday
+  * Update launch files for Foxy or later
+* Contributors: Jesse Zhang, Vasily Kiniv
+
 2.0.3 (2022-09-01)
 ------------------
 * Fix build with later versions of GCC
