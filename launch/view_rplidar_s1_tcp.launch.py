@@ -10,7 +10,7 @@ def generate_launch_description():
         IncludeLaunchDescription(PythonLaunchDescriptionSource([ThisLaunchFileDir(), '/rplidar_s1_tcp.launch.py'])),
         Node(
             package='rviz2',
-            node_executable='rviz2',
+            executable='rviz2',
             output='screen',
             arguments=['-d', [ThisLaunchFileDir(), '/../rviz/rplidar.rviz']],
         )

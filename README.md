@@ -1,4 +1,4 @@
-RPLIDAR ROS package
+RPLIDAR ROS 2 Package
 =====================================================================
 
 ROS node and test application for RPLIDAR
@@ -13,39 +13,31 @@ rplidar SDK: https://github.com/Slamtec/rplidar_sdk
 
 rplidar Tutorial:  https://github.com/robopeak/rplidar_ros/wiki
 
-How to build rplidar ros package
+Getting Started
 =====================================================================
-    1) Clone this project to your catkin's workspace src folder
-    2) Running catkin_make to build rplidarNode and rplidarNodeClient
+1) Clone this project to your colcon workspace src folder.
+2) Build the package: ```colcon build --symlink-install```
 
-How to run rplidar ros package
+Running the Package
 =====================================================================
-There're two ways to run rplidar ros package
+There are two ways to run the RPLIDAR ROS 2 Package.
 
 I. Run rplidar node and view in the rviz
 ------------------------------------------------------------
-roslaunch rplidar_ros view_rplidar.launch (for RPLIDAR A1/A2)
-,
-roslaunch rplidar_ros view_rplidar_a3.launch (for RPLIDAR A3)
-or
-roslaunch rplidar_ros view_rplidar_s1.launch (for RPLIDAR S1)
+RPLIDAR A1/A2: ```ros2 launch rplidar_ros view_rplidar.launch.py```
 
-You should see rplidar's scan result in the rviz.
+RPLIDAR A3: ```ros2 launch rplidar_ros view_rplidar_a3.launch.py```
+
+RPLIDAR S1: ```ros2 launch rplidar_ros view_rplidar_s1.launch.py```
 
 II. Run rplidar node and view using test application
 ------------------------------------------------------------
-roslaunch rplidar_ros rplidar.launch (for RPLIDAR A1/A2)
-,
-roslaunch rplidar_ros rplidar_a3.launch (for RPLIDAR A3)
-or
-roslaunch rplidar_ros rplidar_s1.launch (for RPLIDAR S1)
+RPLIDAR A1/A2: ```ros2 launch rplidar_ros rplidar.launch.py``` OR ```ros2 run rplidar_ros rplidar_composition```
 
-rosrun rplidar_ros rplidarNodeClient
+RPLIDAR A3: ```ros2 launch rplidar_ros rplidar_a3.launch.py```
 
-You should see rplidar's scan result in the console
+RPLIDAR S1: ```ros2 launch rplidar_ros rplidar_s1.launch.py```
 
-Notice: the different is serial_baudrate between A1/A2 and A3/S1
-
-RPLidar frame
+Frame Orientation
 =====================================================================
-RPLidar frame must be broadcasted according to picture shown in rplidar-frame.png
+<img src="rplidar_A1.png" alt="" height="300"/><img src="rplidar_A2.png" alt="" height="300"/>
