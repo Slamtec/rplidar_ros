@@ -11,11 +11,20 @@ endif()
 
 set(RPLIDAR_SDK_PATH "./sdk/")
 
+if(APPLE)
+add_compile_definitions(_MACOS)
+FILE(GLOB RPLIDAR_SDK_SRC
+  "${RPLIDAR_SDK_PATH}/src/arch/macOS/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/*.cpp"
+)
+else()
 FILE(GLOB RPLIDAR_SDK_SRC
   "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/*.cpp"
 )
+endif()
 
 set(req_deps
   "rclcpp"
