@@ -53,6 +53,7 @@ rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
   flip_x_axis_ = this->declare_parameter("flip_x_axis", false);
   scan_mode_ = this->declare_parameter("scan_mode", std::string());
   topic_name_ = this->declare_parameter("topic_name", std::string("scan"));
+  auto_standby_ = this->declare_parameter("auto_standby", false);
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -103,15 +104,9 @@ rplidar_node::rplidar_node(const rclcpp::NodeOptions & options)
     return;
   }
 
-  /* start motor */
-  m_drv->startMotor();
-
-  if (!set_scan_mode()) {
-    /* set the scan mode */
-    m_drv->stop();
-    m_drv->stopMotor();
-    RPlidarDriver::DisposeDriver(m_drv);
-    exit(1);
+  /* start motor and scanning */
+  if (!auto_standby_) {
+    this->start();
   }
 
   /* done setting up RPLIDAR stuff, now set up ROS 2 stuff */
@@ -247,24 +242,28 @@ bool rplidar_node::checkRPLIDARHealth() const
 
 void rplidar_node::stop_motor(const EmptyRequest req, EmptyResponse res)
 {
-  if (nullptr == m_drv) {
+  if (auto_standby_) {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Ingnoring stop_motor request because rplidar_node is in 'auto standby' mode");
     return;
   }
-
   RCLCPP_DEBUG(this->get_logger(), "Call to '%s'", __FUNCTION__);
-  m_drv->stop();
-  m_drv->stopMotor();
+
+  this->stop();
 }
 
 void rplidar_node::start_motor(const EmptyRequest req, EmptyResponse res)
 {
-  if (nullptr == m_drv) {
+  if (auto_standby_) {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Ingnoring start_motor request because rplidar_node is in 'auto standby' mode");
     return;
   }
-
   RCLCPP_DEBUG(this->get_logger(), "Call to '%s'", __FUNCTION__);
-  m_drv->startMotor();
-  m_drv->startScan(0, 1);
+
+  this->start();
 }
 
 bool rplidar_node::set_scan_mode()
@@ -332,6 +331,17 @@ void rplidar_node::publish_loop()
   size_t count = 360 * 8;
   auto nodes = std::make_unique<rplidar_response_measurement_node_hq_t[]>(count);
 
+  if (auto_standby_) {
+    if (m_publisher->get_subscription_count() > 0 && !m_running) {
+      this->start();
+    } else if (m_publisher->get_subscription_count() == 0) {
+      if (m_running) {
+        this->stop();
+      }
+      return;
+    }
+  }
+
   start_scan_time = this->now();
   op_result = m_drv->grabScanDataHq(nodes.get(), count);
   end_scan_time = this->now();
@@ -392,6 +402,35 @@ void rplidar_node::publish_loop()
 
     publish_scan(scan_duration, std::move(nodes), count);
   }
+}
+
+void rplidar_node::start()
+{
+  if (nullptr == m_drv) {
+    return;
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Start");
+  m_drv->startMotor();
+  if (!set_scan_mode()) {
+    this->stop();
+    RCLCPP_ERROR(this->get_logger(), "Failed to set scan mode");
+    RPlidarDriver::DisposeDriver(m_drv);
+    exit(1);
+  }
+  m_running = true;
+}
+
+void rplidar_node::stop()
+{
+  if (nullptr == m_drv) {
+    return;
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Stop");
+  m_drv->stop();
+  m_drv->stopMotor();
+  m_running = false;
 }
 
 }  // namespace rplidar_ros

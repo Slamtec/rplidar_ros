@@ -95,6 +95,8 @@ private:
   bool checkRPLIDARHealth() const;
   bool set_scan_mode();
   void publish_loop();
+  void start();
+  void stop();
 
   /* parameters */
   std::string channel_type_;
@@ -109,6 +111,7 @@ private:
   bool flip_x_axis_;
   int m_angle_compensate_multiple;
   std::string scan_mode_;
+  bool auto_standby_;
   /* Publisher */
   LaserScanPub m_publisher;
   /* Services */
@@ -124,6 +127,8 @@ private:
   double angle_min = deg_2_rad(0);
   double angle_max = deg_2_rad(359);
   const float min_distance = 0.15f;
+  /* State */
+  bool m_running = false;
 };
 
 }  // namespace rplidar_ros
