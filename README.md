@@ -24,7 +24,7 @@ There're two ways to run rplidar ros package
 
 I. Run rplidar node and view in the rviz
 ------------------------------------------------------------
-roslaunch rplidar_ros view_rplidar.launch (for RPLIDAR A1/A2)
+roslaunch rplidar_ros view_rplidar.launch (for RPLIDAR A1/A2)  
 ,
 roslaunch rplidar_ros view_rplidar_a3.launch (for RPLIDAR A3)
 ,
