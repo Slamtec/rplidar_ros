@@ -34,7 +34,7 @@ roslaunch rplidar_ros view_rplidar_s2.launch (for RPLIDAR S2)
 ,  
 roslaunch rplidar_ros view_rplidar_s2e.launch (for RPLIDAR S2E)
 ,  
-or roslaunch rplidar_ros view_rplidar_t1.launch (for SLAMTEC LPX T Serials)
+or roslaunch rplidar_ros view_rplidar_t1.launch (for SLAMTEC LPX T Serials)  
 You should see rplidar's scan result in the rviz.
 
 II. Run rplidar node and view using test application
@@ -49,7 +49,7 @@ roslaunch rplidar_ros rplidar_s2.launch (for RPLIDAR S2)
 ,  
 roslaunch rplidar_ros rplidar_s2e.launch (for RPLIDAR S2E)
 ,  
-roslaunch rplidar_ros rplidar_t1.launch (for SLAMTEC LPX T Serials)  
+or roslaunch rplidar_ros rplidar_t1.launch (for SLAMTEC LPX T Serials)  
 rosrun rplidar_ros rplidarNodeClient
 
 You should see rplidar's scan result in the console
