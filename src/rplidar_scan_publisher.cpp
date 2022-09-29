@@ -64,25 +64,15 @@ class RPLidarScanPublisher : public rclcpp::Node
   private:    
     void init_param()
     {
-        this->declare_parameter<std::string>("channel_type");
-        this->declare_parameter<std::string>("tcp_ip");
-        this->declare_parameter<int>("tcp_port");
-        this->declare_parameter<std::string>("serial_port");
-        this->declare_parameter<int>("serial_baudrate");
-        this->declare_parameter<std::string>("frame_id");
-        this->declare_parameter<bool>("inverted");
-        this->declare_parameter<bool>("angle_compensate");
-        this->declare_parameter<std::string>("scan_mode");
-
-        this->get_parameter_or<std::string>("channel_type", channel_type, "serial");
-        this->get_parameter_or<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
-        this->get_parameter_or<int>("tcp_port", tcp_port, 20108);
-        this->get_parameter_or<std::string>("serial_port", serial_port, "/dev/ttyUSB0"); 
-        this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 115200/*256000*/);//ros run for A1 A2, change to 256000 if A3
-        this->get_parameter_or<std::string>("frame_id", frame_id, "laser_frame");
-        this->get_parameter_or<bool>("inverted", inverted, false);
-        this->get_parameter_or<bool>("angle_compensate", angle_compensate, false);
-        this->get_parameter_or<std::string>("scan_mode", scan_mode, std::string());
+        channel_type = this->declare_parameter<std::string>("channel_type", "serial");
+        tcp_ip = this->declare_parameter<std::string>("tcp_ip", "192.168.0.7"); 
+        tcp_port = this->declare_parameter<int>("tcp_port", 20108);
+        serial_port = this->declare_parameter<std::string>("serial_port", "/dev/ttyUSB0"); 
+        serial_baudrate = this->declare_parameter<int>("serial_baudrate", 115200/*256000*/);//ros run for A1 A2, change to 256000 if A3
+        frame_id = this->declare_parameter<std::string>("frame_id", "laser_frame");
+        inverted = this->declare_parameter<bool>("inverted", false);
+        angle_compensate = this->declare_parameter<bool>("angle_compensate", false);
+        scan_mode = this->declare_parameter<std::string>("scan_mode", std::string());
     }
 
     bool getRPLIDARDeviceInfo(RPlidarDriver * drv)
