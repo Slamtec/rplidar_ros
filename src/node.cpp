@@ -43,6 +43,11 @@
 
 #define DEG2RAD(x) ((x)*M_PI/180.)
 
+enum {
+    LIDAR_A_SERIES_MINUM_MAJOR_ID      = 0,
+    LIDAR_S_SERIES_MINUM_MAJOR_ID       = 5,
+    LIDAR_T_SERIES_MINUM_MAJOR_ID       = 8,
+};
 using namespace sl;
 
 ILidarDriver * drv = NULL;
@@ -124,6 +129,17 @@ bool getRPLIDARDeviceInfo(ILidarDriver * drv)
     for (int pos = 0; pos < 16 ;++pos) {
         sprintf(sn_str + (pos * 2),"%02X", devinfo.serialnum[pos]);
     }
+    char mode_str[16] = {0};
+    if((devinfo.model>>4) <= LIDAR_S_SERIES_MINUM_MAJOR_ID){
+        sprintf(mode_str,"A%dM%d",(devinfo.model>>4),(devinfo.model&0xf));
+
+    }else if((devinfo.model>>4) <= LIDAR_T_SERIES_MINUM_MAJOR_ID){
+        sprintf(mode_str,"S%dM%d",(devinfo.model>>4)-LIDAR_S_SERIES_MINUM_MAJOR_ID,(devinfo.model&0xf));
+    }else{
+        sprintf(mode_str,"T%dM%d",(devinfo.model>>4)-LIDAR_T_SERIES_MINUM_MAJOR_ID,(devinfo.model&0xf));
+
+    }
+    ROS_INFO("RPLIDAR MODE:%s",mode_str);
     ROS_INFO("RPLIDAR S/N: %s",sn_str);
     ROS_INFO("Firmware Ver: %d.%02d",devinfo.firmware_version>>8, devinfo.firmware_version & 0xFF);
     ROS_INFO("Hardware Rev: %d",(int)devinfo.hardware_version);
@@ -204,7 +220,7 @@ int main(int argc, char * argv[]) {
     int points_per_circle = 360;//min 360 ponits at per circle 
     std::string scan_mode;
     float max_distance;
-    float scan_frequency;
+    double scan_frequency;
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
@@ -220,10 +236,10 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
     if(channel_type == "udp"){
-        nh_private.param<float>("scan_frequency", scan_frequency, 20.0);
+        nh_private.param<double>("scan_frequency", scan_frequency, 20.0);
     }
     else{
-        nh_private.param<float>("scan_frequency", scan_frequency, 10.0);
+        nh_private.param<double>("scan_frequency", scan_frequency, 10.0);
     }
 
     int ver_major = SL_LIDAR_SDK_VERSION_MAJOR;
@@ -268,12 +284,23 @@ int main(int argc, char * argv[]) {
         return -1;
     }
     
+    
+    sl_lidar_response_device_info_t devinfo;
+    op_result = drv->getDeviceInfo(devinfo);
+    bool scan_frequency_tunning_after_scan = false;
+
+    if( (devinfo.model>>4) > LIDAR_S_SERIES_MINUM_MAJOR_ID){
+        scan_frequency_tunning_after_scan = true;
+    }
     //two service for start/stop lidar rotate
     ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
     ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
 
-    //start lidar rotate
-    drv->setMotorSpeed();
+    if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
+       //start RPLIDAR A serials  rotate by pwm
+        drv->setMotorSpeed(600);     
+    }
+
 
     LidarScanMode current_scan_mode;
     if (scan_mode.empty()) {
@@ -322,6 +349,8 @@ int main(int argc, char * argv[]) {
     ros::Time start_scan_time;
     ros::Time end_scan_time;
     double scan_duration;
+
+    
     while (ros::ok()) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
         size_t   count = _countof(nodes);
@@ -331,13 +360,19 @@ int main(int argc, char * argv[]) {
         end_scan_time = ros::Time::now();
         scan_duration = (end_scan_time - start_scan_time).toSec();
 
-        if (op_result == SL_RESULT_OK) {
+        if (op_result == SL_RESULT_OK) { 
+            if(scan_frequency_tunning_after_scan){ //Set scan frequency(For Slamtec Tof lidar)
+                ROS_INFO("set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
+                drv->setMotorSpeed(scan_frequency*60); //rpm 
+                scan_frequency_tunning_after_scan = false;
+                continue;
+            }
             op_result = drv->ascendScanData(nodes, count);
             float angle_min = DEG2RAD(0.0f);
             float angle_max = DEG2RAD(360.0f);
             if (op_result == SL_RESULT_OK) {
                 if (angle_compensate) {
-                                      const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
+                    const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                     int angle_compensate_offset = 0;
                     sl_lidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
                     memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(sl_lidar_response_measurement_node_hq_t));
