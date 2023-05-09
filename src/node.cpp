@@ -146,6 +146,18 @@ bool getRPLIDARDeviceInfo(ILidarDriver * drv)
     return true;
 }
 
+bool resetRPLIDAR(ILidarDriver * drv)
+{
+    sl_result     op_result;
+    op_result = drv->reset();
+    if (SL_IS_OK(op_result)) {
+        return true;
+    } else {
+        ROS_ERROR("Error, cannot reset rplidar: %x", op_result);
+        return false;
+    }
+}
+
 bool checkRPLIDARHealth(ILidarDriver * drv)
 {
     sl_result     op_result;
@@ -215,6 +227,7 @@ int main(int argc, char * argv[]) {
     int serial_baudrate = 115200;
     std::string frame_id;
     bool inverted = false;
+    bool initial_reset = false;
     bool angle_compensate = true;    
     float angle_compensate_multiple = 1.0;//min 360 ponits at per 1 degree
     int points_per_circle = 360;//min 360 ponits at per circle 
@@ -233,6 +246,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<int>("serial_baudrate", serial_baudrate, 115200/*256000*/);//ros run for A1 A2, change to 256000 if A3
     nh_private.param<std::string>("frame_id", frame_id, "laser_frame");
     nh_private.param<bool>("inverted", inverted, false);
+    nh_private.param<bool>("initial_reset", initial_reset, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
     if(channel_type == "udp"){
@@ -278,6 +292,18 @@ int main(int argc, char * argv[]) {
     if(!getRPLIDARDeviceInfo(drv)){
        delete drv;
        return -1;
+    }
+    if(initial_reset) {
+        ROS_INFO("Resetting rplidar");
+        if (!resetRPLIDAR(drv)) {
+            delete drv;
+            ROS_ERROR("Error resetting rplidar");
+            return -1;
+        } else {
+            ROS_INFO("Rplidar successfully reset");
+            // let rplidar settle after reset
+            ros::Duration(2).sleep();
+        }
     }
     if (!checkRPLIDARHealth(drv)) {
         delete drv;
