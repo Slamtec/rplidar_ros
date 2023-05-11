@@ -11,13 +11,14 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    channel_type =  LaunchConfiguration('channel_type', default='serial')
-    serial_port = LaunchConfiguration('serial_port', default='/dev/ttyUSB0')
-    serial_baudrate = LaunchConfiguration('serial_baudrate', default='256000') #for A3 is 256000
+    channel_type = LaunchConfiguration('channel_type', default='udp')
+    udp_ip = LaunchConfiguration('udp_ip', default='192.168.11.2')
+    udp_port = LaunchConfiguration('udp_port', default='8089') 
     frame_id = LaunchConfiguration('frame_id', default='laser')
     inverted = LaunchConfiguration('inverted', default='false')
     angle_compensate = LaunchConfiguration('angle_compensate', default='true')
     scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+    scan_frequency = LaunchConfiguration('scan_frequency', default='10')
 
     return LaunchDescription([
 
@@ -27,14 +28,14 @@ def generate_launch_description():
             description='Specifying channel type of lidar'),
 
         DeclareLaunchArgument(
-            'serial_port',
-            default_value=serial_port,
-            description='Specifying usb port to connected lidar'),
+            'udp_ip',
+            default_value=udp_ip,
+            description='Specifying udp ip to connected lidar'),
 
         DeclareLaunchArgument(
-            'serial_baudrate',
-            default_value=serial_baudrate,
-            description='Specifying usb port baudrate to connected lidar'),
+            'udp_port',
+            default_value=udp_port,
+            description='Specifying udp port to connected lidar'),
         
         DeclareLaunchArgument(
             'frame_id',
@@ -60,9 +61,9 @@ def generate_launch_description():
             package='rplidar_ros',
             executable='rplidar_node',
             name='rplidar_node',
-            parameters=[{'channel_type':channel_type,
-                         'serial_port': serial_port, 
-                         'serial_baudrate': serial_baudrate, 
+            parameters=[{'channel_type': channel_type, 
+                         'udp_ip': udp_ip,
+                         'udp_port': udp_port,
                          'frame_id': frame_id,
                          'inverted': inverted, 
                          'angle_compensate': angle_compensate, 

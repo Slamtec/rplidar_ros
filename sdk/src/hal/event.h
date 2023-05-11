@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2019 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -95,7 +95,7 @@ public:
         }
     }
     
-    unsigned long wait( unsigned long timeout = 0xFFFFFFFF )
+    signed long wait( unsigned long timeout = 0xFFFFFFFF )
     {
 #ifdef _WIN32
         switch (WaitForSingleObject(_event, timeout==0xFFFFFFF?INFINITE:(DWORD)timeout))
@@ -109,7 +109,7 @@ public:
         }
         return EVENT_OK;
 #else
-        unsigned long ans = EVENT_OK;
+        signed long ans = EVENT_OK;
         pthread_mutex_lock( &_cond_locker );
 
         if ( !_is_signalled )

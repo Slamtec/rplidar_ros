@@ -2,7 +2,7 @@
 # Set minimum required version of cmake, project name and compile options
 ################################################################################
 cmake_minimum_required(VERSION 3.5)
-project(rplidar_ros2)
+project(rplidar_ros)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -43,14 +43,20 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
-add_executable(rplidar_scan_publisher	src/rplidar_scan_publisher.cpp ${RPLIDAR_SDK_SRC})
-# target_link_libraries(rplidar_scan_publisher ${ament_cmake_LIBRARIES})
-ament_target_dependencies(rplidar_scan_publisher
+add_executable(rplidar_node	src/rplidar_node.cpp ${RPLIDAR_SDK_SRC})
+# target_link_libraries(rplidar_node ${ament_cmake_LIBRARIES})
+ament_target_dependencies(rplidar_node
   rclcpp
   std_srvs
   sensor_msgs
 )
 
+add_executable(rplidar_client src/rplidar_client.cpp)
+ament_target_dependencies(rplidar_client
+  rclcpp
+  std_srvs
+  sensor_msgs
+)
 ################################################################################
 # Install
 ################################################################################
@@ -59,7 +65,7 @@ install(DIRECTORY launch rviz
 )
 
 install(
-  TARGETS rplidar_scan_publisher
+  TARGETS rplidar_node rplidar_client
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
