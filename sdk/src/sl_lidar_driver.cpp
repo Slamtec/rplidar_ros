@@ -175,7 +175,7 @@ namespace sl {
         if (i == count) return SL_RESULT_OPERATION_FAIL;
 
         //Tune tail
-        for (i = count - 1; i >= 0; i--) {
+        for (i = count - 1; i < count; i--) {
             if (getDistanceQ2(nodebuffer[i]) == 0) {
                 continue;
             }
