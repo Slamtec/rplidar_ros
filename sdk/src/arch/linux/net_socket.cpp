@@ -435,7 +435,7 @@ public:
     virtual u_result send(const void * buffer, size_t len) 
     {
         size_t ans = ::send( _socket_fd, buffer, len, MSG_NOSIGNAL);
-        if (ans == (int)len) {
+        if (ans == len) {
             return RESULT_OK;
         } else {
             switch (errno) {
@@ -719,11 +719,11 @@ public:
 
     virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len)
     {
-        const struct sockaddr* addr = &target ? reinterpret_cast<const struct sockaddr*>(target.getPlatformData()) : NULL;
+        const struct sockaddr* addr = reinterpret_cast<const struct sockaddr*>(target.getPlatformData());
         assert(addr);
         size_t ans = ::sendto( _socket_fd, buffer, len, 0, addr, sizeof(sockaddr_storage));
         if (ans != (size_t)-1) {
-            assert(ans == (int)len);
+            assert(ans == len);
             return RESULT_OK;
         } else {
             switch (errno) {

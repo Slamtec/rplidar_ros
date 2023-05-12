@@ -29,8 +29,7 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   */
-
-#pragma once
+ 
 #include "sl_lidar_driver.h"
 #include "hal/abs_rxtx.h"
 #include "hal/socket.h"
