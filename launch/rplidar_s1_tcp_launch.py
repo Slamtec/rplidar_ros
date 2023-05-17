@@ -52,8 +52,8 @@ def generate_launch_description():
 
         Node(
             package='rplidar_ros',
-            executable='rplidar_node',
-            name='rplidar_node',
+            node_executable='rplidar_node',
+            node_name='rplidar_node',
             parameters=[{'channel_type': channel_type, 
                          'tcp_ip': tcp_ip,
                          'tcp_port': tcp_port, 

@@ -56,8 +56,8 @@ def generate_launch_description():
 
         Node(
             package='rplidar_ros',
-            executable='rplidar_node',
-            name='rplidar_node',
+            node_executable='rplidar_node',
+            node_name='rplidar_node',
             parameters=[{'channel_type':channel_type,
                          'serial_port': serial_port, 
                          'serial_baudrate': serial_baudrate, 
@@ -69,8 +69,8 @@ def generate_launch_description():
 
         Node(
             package='rviz2',
-            executable='rviz2',
-            name='rviz2',
+            node_executable='rviz2',
+            node_name='rviz2',
             arguments=['-d', rviz_config_dir],
             output='screen'),
     ])

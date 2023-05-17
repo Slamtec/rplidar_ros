@@ -56,8 +56,8 @@ def generate_launch_description():
 
         Node(
             package='rplidar_ros',
-            executable='rplidar_node',
-            name='rplidar_node',
+            node_executable='rplidar_node',
+            node_name='rplidar_node',
             parameters=[{'channel_type':channel_type,
                          'serial_port': serial_port, 
                          'serial_baudrate': serial_baudrate, 
