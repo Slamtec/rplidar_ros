@@ -49,14 +49,16 @@ SLAMTEC LIDAR Tutorial: <https://github.com/robopeak/rplidar_ros/wiki>
 ## Compile & Install rplidar_ros package
 
 1. Clone rplidar_ros package from github
-Ensure you're still in the ros2_ws/src directory before you clone:
+
+   Ensure you're still in the ros2_ws/src directory before you clone:
 
    ```bash
    git clone -b ros2 https://github.com/Slamtec/rplidar_ros.git
    ```
 
 2. Build rpidar_ros package
-From the root of your workspace (ros2_ws), you can now build rpli_ros package using the command:
+
+   From the root of your workspace (ros2_ws), you can now build rplidar_ros package using the command:
 
    ```bash
    cd ~/ros2_ws/
@@ -79,6 +81,22 @@ From the root of your workspace (ros2_ws), you can now build rpli_ros package us
     $echo "source <your_own_ros2_ws>/install/setup.bash" >> ~/.bashrc
     $source ~/.bashrc
     ```
+
+4. Create udev rules for rplidar
+
+   rplidar_ros running requires the read and write permissions of the serial device.
+   You can manually modify it with the following command:
+
+   ```bash
+   sudo chmod 777 /dev/ttyUSB0
+   ```
+
+   But a better way is to create a udev rule:
+
+   ```bash
+   cd src/rpldiar_ros/
+   source scripts/create_udev_rules.sh
+   ```
 
 ## Run rplidar_ros
 
