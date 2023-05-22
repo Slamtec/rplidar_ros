@@ -2,8 +2,8 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.1.1 (2023-05-22)
+------------------
 * change package.xml
 * add sdk/src/hal/assert.h again
 * delete sdk/src/hal/assert.h
