@@ -164,6 +164,9 @@ bool checkRPLIDARHealth(ILidarDriver * drv)
 			case SL_LIDAR_STATUS_ERROR:
                 ROS_ERROR("Error, rplidar internal error detected. Please reboot the device to retry.");
 				return false;
+            default:
+                ROS_ERROR("Error, Unknown internal error detected. Please reboot the device to retry.");
+                return false;
         }
     } else {
         ROS_ERROR("Error, cannot retrieve rplidar health code: %x", op_result);
