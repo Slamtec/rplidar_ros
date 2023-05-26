@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find rplidar_ros)/launch/bottom_lidar.launch" />
+  <include file="$(find rplidar_ros)/launch/side_lidar.launch" />
+</launch>
