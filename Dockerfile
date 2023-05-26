@@ -13,7 +13,7 @@ RUN apt-get update && \
 
 WORKDIR /home/slamtec_lidar_ws/src
 
-COPY . /home/slamtec_lidar_ws/src/
+COPY . /home/slamtec_lidar_ws/src/rplidar_ros
 
 WORKDIR /home/slamtec_lidar_ws/
 
