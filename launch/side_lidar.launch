@@ -1,0 +1,30 @@
+<launch>
+
+  <!-- publish tf -->
+  <!-- left -->
+  <node pkg="tf" type="static_transform_publisher" name="left_laser_tf" args="0.233070 0.149933 1.032733 1.571 1.396260 0 base_link left_laser_link 10" />
+  <!-- right -->
+  <node pkg="tf" type="static_transform_publisher" name="right_laser_tf" args="0.233070 -0.149933  1.032733 -1.571 1.396260 0 base_link right_laser_link 10" />
+  
+  <node name="right_rplidar_node" pkg="rplidar_ros"  type="rplidarNode" output="screen">
+    <param name="channel_type"        type="string" value="udp"/>  
+    <param name="udp_ip"              type="string" value="10.7.5.152"/>  
+    <param name="frame_id"            type="string" value="right_laser_link"/>
+    <param name="inverted"            type="bool"   value="false"/>
+    <param name="angle_compensate"    type="bool"   value="true"/>
+    <param name="scan_mode"           type="string" value="DenseBoost"/>
+    <param name="scan_frequency"      type="int"  value="10"/>
+    <remap from="scan" to="right_laser_scan"/>
+  </node>
+
+  <node name="left_rplidar_node" pkg="rplidar_ros"  type="rplidarNode" output="screen">
+    <param name="channel_type"        type="string" value="udp"/>  
+    <param name="udp_ip"              type="string" value="10.7.5.153"/>  
+    <param name="frame_id"            type="string" value="left_laser_link"/>
+    <param name="inverted"            type="bool"   value="false"/>
+    <param name="angle_compensate"    type="bool"   value="true"/>
+    <param name="scan_mode"           type="string" value="DenseBoost"/>
+    <param name="scan_frequency"      type="int"  value="10"/>
+    <remap from="scan" to="left_laser_scan"/>
+  </node>
+</launch>
