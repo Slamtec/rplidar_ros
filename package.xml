@@ -7,6 +7,8 @@
     The rplidar ros2 package, support rplidar A1/A2/A3/S1/S2/T1
   </description>
   <maintainer email="ros@slamtec.com">Slamtec ROS Maintainer</maintainer>
+  <maintainer email="deyou.wang@slamtec.com">Wang DeYou</maintainer>
+  <maintainer email="wubin.xia@slamtec.com">WubinXia</maintainer>
   <license>BSD</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
