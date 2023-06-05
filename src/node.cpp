@@ -303,9 +303,20 @@ int main(int argc, char * argv[]) {
             ROS_ERROR("Error resetting rplidar");
             return -1;
         } else {
+            // wait for the rplidar to reset
+            ros::time last_time = ros::time::now();
+            while (!getRPLIDARDeviceInfo(drv)
+            {
+                ros::Duration(2).sleep();
+                if ( (ros::time::now() - last_time) > 10 )
+                {
+                    delete drv;
+                    ROS_ERROR("Error resetting rplidar");
+                    return -1;
+                }
+            }
+
             ROS_INFO("Rplidar successfully reset");
-            // let rplidar settle after reset
-            ros::Duration(2).sleep();
         }
     }
     if (!checkRPLIDARHealth(drv)) {
