@@ -42,6 +42,7 @@
 #endif
 
 #define DEG2RAD(x) ((x)*M_PI/180.)
+#define RESET_TIMEOUT 15 // 15 second
 
 enum {
     LIDAR_A_SERIES_MINUM_MAJOR_ID      = 0,
@@ -303,9 +304,20 @@ int main(int argc, char * argv[]) {
             ROS_ERROR("Error resetting rplidar");
             return -1;
         } else {
-            ROS_INFO("Rplidar successfully reset");
-            // let rplidar settle after reset
-            ros::Duration(2).sleep();
+            // wait for the rplidar to reset
+            ros::Time last_time = ros::Time::now();
+            while (!getRPLIDARDeviceInfo(drv))
+            {
+                ros::Duration(0.5).sleep();
+                if ( (ros::Time::now() - last_time) > ros::Duration(RESET_TIMEOUT) )
+                {
+                    delete drv;
+                    ROS_ERROR("Error resetting rplidar");
+                    return -1;
+                }
+            }
+
+            ROS_INFO("Rplidar reset successfully");
         }
     }
     if (!checkRPLIDARHealth(drv)) {
