@@ -21,6 +21,7 @@ SLAMTEC LIDAR Tutorial: <https://github.com/robopeak/rplidar_ros/wiki>
 |RPLIDAR A3              |
 |RPLIDAR S1              |
 |RPLIDAR S2              |
+|RPLIDAR S3              |
 |RPLIDAR S2E             |
 |RPLIDAR T1              |
 
@@ -142,6 +143,12 @@ The command for RPLIDAR S2 is :
 
 ```bash
 ros2 launch rplidar_ros view_rplidar_s2_launch.py
+```
+
+The command for RPLIDAR S3 is :
+
+```bash
+ros2 launch rplidar_ros view_rplidar_s3_launch.py
 ```
 
 ```bash

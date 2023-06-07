@@ -4,7 +4,7 @@
   <name>rplidar_ros</name>
   <version>2.1.1</version>
   <description>
-    The rplidar ros2 package, support rplidar A1/A2/A3/S1/S2/T1
+    The rplidar ros2 package, support rplidar A1/A2/A3/S1/S2/S3/T1
   </description>
   <maintainer email="ros@slamtec.com">Slamtec ROS Maintainer</maintainer>
   <maintainer email="deyou.wang@slamtec.com">Wang DeYou</maintainer>
