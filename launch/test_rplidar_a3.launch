@@ -8,6 +8,6 @@
   <param name="scan_mode"           type="string" value="Sensitivity"/>
 
  </node>
-  <node name="rplidarNodeClient"          pkg="rplidar_ros"  type="rplidarNodeClient" output="screen">
+  <node name="rplidarNodeClient"    pkg="rplidar_ros"  type="rplidarNodeClient" output="screen">
   </node>
 </launch>

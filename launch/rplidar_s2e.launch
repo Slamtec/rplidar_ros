@@ -6,6 +6,6 @@
   <param name="inverted"            type="bool"   value="false"/>
   <param name="angle_compensate"    type="bool"   value="true"/>
   <param name="scan_mode"           type="string" value="Sensitivity"/>
-  <param name="scan_frequency"      type="int"  value="10"/>
+  <param name="scan_frequency"      type="int"    value="10"/>
   </node>
 </launch>
