@@ -65,6 +65,12 @@ The command for RPLIDAR S2 is :
 roslaunch rplidar_ros view_rplidar_s2.launch
 ```
 
+The command for RPLIDAR S3 is :
+
+```bash
+roslaunch rplidar_ros view_rplidar_s3.launch
+```
+
 The command for RPLIDAR S2E is :
 
 ```bash
@@ -121,6 +127,12 @@ The command for RPLIDAR S2 is :
 
 ```bash
 roslaunch rplidar_ros rplidar_s2.launch
+```
+
+The command for RPLIDAR S3 is :
+
+```bash
+roslaunch rplidar_ros rplidar_s3.launch
 ```
 
 The command for RPLIDAR S2E is :
