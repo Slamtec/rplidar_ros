@@ -2,6 +2,12 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Support RPLIDAR S3
+* Add maintainer members
+* Contributors: Wang DeYou
+
 2.1.1 (2023-05-22)
 ------------------
 * change package.xml
