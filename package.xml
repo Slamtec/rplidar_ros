@@ -4,7 +4,7 @@
   <version>2.1.0</version>
   <description>The rplidar ros package, support rplidar A2/A1 and A3/S1</description>
 
-  <maintainer email="hunterlallen@protonmail.com">Hunter L. Allen</maintainer>
+  <maintainer email="deyou.wang@slamtec.com">Wang DeYou</maintainer>
   <author email="ros@slamtec.com">Slamtec ROS Maintainer</author>
   <license>BSD</license>
 
