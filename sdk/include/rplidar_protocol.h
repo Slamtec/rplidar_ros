@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2009 - 2014 RoboPeak Team
  *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2019 Shanghai Slamtec Co., Ltd.
+ *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
  *  http://www.slamtec.com
  *
  */
@@ -33,39 +33,27 @@
  */
 
 #pragma once
-
+#include "sl_lidar_protocol.h"
 // RP-Lidar Input Packets
 
-#define RPLIDAR_CMD_SYNC_BYTE        0xA5
-#define RPLIDAR_CMDFLAG_HAS_PAYLOAD  0x80
+#define RPLIDAR_CMD_SYNC_BYTE        SL_LIDAR_CMD_SYNC_BYTE
+#define RPLIDAR_CMDFLAG_HAS_PAYLOAD  SL_LIDAR_CMDFLAG_HAS_PAYLOAD
 
 
-#define RPLIDAR_ANS_SYNC_BYTE1       0xA5
-#define RPLIDAR_ANS_SYNC_BYTE2       0x5A
+#define RPLIDAR_ANS_SYNC_BYTE1       SL_LIDAR_ANS_SYNC_BYTE1
+#define RPLIDAR_ANS_SYNC_BYTE2       SL_LIDAR_ANS_SYNC_BYTE2
 
-#define RPLIDAR_ANS_PKTFLAG_LOOP     0x1
+#define RPLIDAR_ANS_PKTFLAG_LOOP     SL_LIDAR_ANS_PKTFLAG_LOOP
 
-#define RPLIDAR_ANS_HEADER_SIZE_MASK        0x3FFFFFFF
-#define RPLIDAR_ANS_HEADER_SUBTYPE_SHIFT    (30)
+#define RPLIDAR_ANS_HEADER_SIZE_MASK        SL_LIDAR_ANS_HEADER_SIZE_MASK
+#define RPLIDAR_ANS_HEADER_SUBTYPE_SHIFT    SL_LIDAR_ANS_HEADER_SUBTYPE_SHIFT
 
 #if defined(_WIN32)
 #pragma pack(1)
 #endif
 
-typedef struct _rplidar_cmd_packet_t {
-    _u8 syncByte; //must be RPLIDAR_CMD_SYNC_BYTE
-    _u8 cmd_flag; 
-    _u8 size;
-    _u8 data[0];
-} __attribute__((packed)) rplidar_cmd_packet_t;
-
-
-typedef struct _rplidar_ans_header_t {
-    _u8  syncByte1; // must be RPLIDAR_ANS_SYNC_BYTE1
-    _u8  syncByte2; // must be RPLIDAR_ANS_SYNC_BYTE2
-    _u32 size_q30_subtype; // see _u32 size:30; _u32 subType:2;
-    _u8  type;
-} __attribute__((packed)) rplidar_ans_header_t;
+typedef sl_lidar_cmd_packet_t rplidar_cmd_packet_t;
+typedef sl_lidar_ans_header_t rplidar_ans_header_t;
 
 #if defined(_WIN32)
 #pragma pack()
