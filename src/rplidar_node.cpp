@@ -52,10 +52,10 @@ using namespace sl;
 
 bool need_exit = false;
 
-class SLlidarNode : public rclcpp::Node
+class RPlidarNode : public rclcpp::Node
 {
   public:
-    SLlidarNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
+    RPlidarNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
     : Node("rplidar_node", options)
     {
 
@@ -101,7 +101,7 @@ class SLlidarNode : public rclcpp::Node
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 10.0);
     }
 
-    bool getSLLIDARDeviceInfo(ILidarDriver * drv)
+    bool getRPLIDARDeviceInfo(ILidarDriver * drv)
     {
         sl_result     op_result;
         sl_lidar_response_device_info_t devinfo;
@@ -127,7 +127,7 @@ class SLlidarNode : public rclcpp::Node
         return true;
     }
 
-    bool checkSLLIDARHealth(ILidarDriver * drv)
+    bool checkRPLIDARHealth(ILidarDriver * drv)
     {
         sl_result     op_result;
         sl_lidar_response_device_health_t healthinfo;
@@ -400,14 +400,14 @@ public:
             return -1;
         }
         
-        // get sllidar device info
-        if (!getSLLIDARDeviceInfo(drv)) {
+        // get rplidar device info
+        if (!getRPLIDARDeviceInfo(drv)) {
             delete drv; drv = nullptr;
             return -1;
         }
 
         // check health...
-        if (!checkSLLIDARHealth(drv)) {
+        if (!checkRPLIDARHealth(drv)) {
             delete drv; drv = nullptr;
             return -1;
         }
@@ -421,9 +421,9 @@ public:
         scan_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(topic_name, rclcpp::QoS(rclcpp::KeepLast(10)));
 
         stop_motor_service = this->create_service<std_srvs::srv::Empty>("stop_motor",  
-                                std::bind(&SLlidarNode::stop_motor,this,std::placeholders::_1,std::placeholders::_2));
+                                std::bind(&RPlidarNode::stop_motor,this,std::placeholders::_1,std::placeholders::_2));
         start_motor_service = this->create_service<std_srvs::srv::Empty>("start_motor", 
-                                std::bind(&SLlidarNode::start_motor,this,std::placeholders::_1,std::placeholders::_2));
+                                std::bind(&RPlidarNode::start_motor,this,std::placeholders::_1,std::placeholders::_2));
 
         //drv->setMotorSpeed();
 
@@ -565,9 +565,9 @@ void ExitHandler(int sig)
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);  
-  auto sllidar_node = std::make_shared<SLlidarNode>(rclcpp::NodeOptions());
+  auto rplidar_node = std::make_shared<RPlidarNode>(rclcpp::NodeOptions());
   signal(SIGINT,ExitHandler);
-  int ret = sllidar_node->work_loop();
+  int ret = rplidar_node->work_loop();
   rclcpp::shutdown();
   return ret;
 }
