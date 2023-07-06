@@ -343,7 +343,7 @@ class SLlidarNode : public rclcpp::Node
             RCLCPP_ERROR(this->get_logger(), "Failed to set scan mode");
             return false;
         }
-        m_running = true;
+        is_scanning = true;
         return true;
     }
 
@@ -356,7 +356,7 @@ class SLlidarNode : public rclcpp::Node
         RCLCPP_INFO(this->get_logger(), "Stop");
         drv->stop();
         drv->setMotorSpeed(0);
-        m_running = false;
+        is_scanning = false;
     }
 
 public:    
@@ -435,11 +435,11 @@ public:
             size_t   count = _countof(nodes);
 
             if (auto_standby) {
-                if (scan_pub->get_subscription_count() > 0 && !m_running) {
+                if (scan_pub->get_subscription_count() > 0 && !is_scanning) {
                     this->start();
                 }
                 else if (scan_pub->get_subscription_count() == 0) {
-                    if (m_running) {
+                    if (is_scanning) {
                         this->stop();
                     }
                     return 0;
@@ -550,7 +550,7 @@ public:
     std::string scan_mode;
     float scan_frequency;
     /* State */
-    bool m_running = false;
+    bool is_scanning = false;
 
     ILidarDriver *drv = nullptr;
 };
