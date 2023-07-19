@@ -442,7 +442,6 @@ public:
                     if (is_scanning) {
                         this->stop();
                     }
-                    return 0;
                 }
             }
 
