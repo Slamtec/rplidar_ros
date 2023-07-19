@@ -2,19 +2,21 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.10.0 (2019-02-22)
-------------------
-* Update RPLIDAR SDK to 1.10.0
-* [new feature] support Rplidar S1
-* Contributors: tony,WubinXia
-
-1.9.0 (2018-08-24)
-------------------
-* Update RPLIDAR SDK to 1.9.0
-* [new feature] support baudrate 57600 and 1382400, support HQ scan response
-* [bugfix] TCP channel doesn't work
-* [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
-* Contributors: tony,kint
+Forthcoming
+-----------
+* Bugfix:auto standby mode not work
+* Rename SLLidar* to RPLidar* in rplidar_node.cpp
+* Renaming variable m_running to is_scanning
+* Update README
+* Use rplidar_ros.rviz instead of rplidar.rviz
+* Update source files in src directory:
+  Use the source files developed by Slamtec instead of the old ones, and add the functionality of the old code.
+* Modify and add launch files
+* Update rplidar-sdk to 2.0.0
+* Update create_udev_rules.sh
+* Update description in package.xml
+* Update maintainer to Wang DeYou
+* Contributors: Wang DeYou
 
 2.1.0 (2022-09-06)
 ------------------
@@ -98,6 +100,20 @@ Changelog for package rplidar_ros
 * [bugfix]modify scan_mode at test_rplidar.launch and test_rplidar_a3.launch
 * Contributors: Dan Rose, Hunter L. Allen, WubinXia, kint
 
+1.10.0 (2019-02-22)
+-------------------
+* Update RPLIDAR SDK to 1.10.0
+* [new feature] support Rplidar S1
+* Contributors: tony,WubinXia
+
+1.9.0 (2018-08-24)
+------------------
+* Update RPLIDAR SDK to 1.9.0
+* [new feature] support baudrate 57600 and 1382400, support HQ scan response
+* [bugfix] TCP channel doesn't work
+* [improvement] Print warning messages when deprecated APIs are called; imporve angular accuracy for ultra capsuled scan points
+* Contributors: tony,kint
+
 1.7.0 (2018-07-19)
 ------------------
 * Update RPLIDAR SDK to 1.7.0
@@ -105,14 +121,12 @@ Changelog for package rplidar_ros
 * upport display and set scan mode
 * Contributors: kint
 
-
 1.6.0 (2018-05-21)
 ------------------
 * Release 1.6.0.
 * Update RPLIDAR SDK to 1.6.0
 * Support new product RPLIDAR A3(default 16K model and max_distance 25m)
 * Contributors: kint
-
 
 1.5.7 (2016-12-15)
 ------------------
