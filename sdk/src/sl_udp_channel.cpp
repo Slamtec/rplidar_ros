@@ -30,7 +30,6 @@
   *
   */
 
-#pragma once
 #include "sl_lidar_driver.h"
 #include "hal/abs_rxtx.h"
 #include "hal/socket.h"
@@ -78,7 +77,7 @@ namespace sl {
 
         int write(const void* data, size_t size)
         {
-            return _binded_socket->sendTo(NULL, data, size);
+            return _binded_socket->sendTo(_socket, data, size);
         }
 
         int read(void* buffer, size_t size)
