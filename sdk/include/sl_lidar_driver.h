@@ -180,6 +180,8 @@ namespace sl {
         */
         virtual void clearReadCache() = 0;
 
+        virtual int getChannelType() = 0;
+
     private:
 
     };

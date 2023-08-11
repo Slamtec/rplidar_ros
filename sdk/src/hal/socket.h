@@ -140,7 +140,7 @@ public:
     virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len) = 0;
    
     virtual u_result recvFrom(void *buf, size_t len, size_t & recv_len, SocketAddress * sourceAddr = NULL) = 0;
-
+    virtual u_result clearRxCache() = 0;
     
 protected:
     virtual ~DGramSocket() {} // use dispose();
