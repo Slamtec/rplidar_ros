@@ -792,6 +792,26 @@ public:
 
     }
 */
+    virtual u_result clearRxCache()
+    {
+        timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        fd_set rdset;
+        FD_ZERO(&rdset);
+        FD_SET(_socket_fd, &rdset);
+
+        int res = -1;
+        char recv_data[2];
+        memset(recv_data, 0, sizeof(recv_data));
+        while (true) {
+            res = select(FD_SETSIZE, &rdset, nullptr, nullptr, &tv);
+            if (res == 0) break;
+            recv(_socket_fd, recv_data, 1, 0);
+        }
+        return RESULT_OK;
+    }
+
 	virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len)
     {
         const struct sockaddr* addr = &target ? reinterpret_cast<const struct sockaddr*>(target.getPlatformData()) : NULL;

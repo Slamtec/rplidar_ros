@@ -176,6 +176,7 @@ namespace sl {
 
         //Tune tail
         for (i = count - 1; i < count; i--) {
+            // To avoid array overruns, use the i < count condition
             if (getDistanceQ2(nodebuffer[i]) == 0) {
                 continue;
             }
@@ -515,6 +516,14 @@ namespace sl {
                     _isScanning = true;
                     _cachethread = CLASS_THREAD(SlamtecLidarDriver, _cacheHqScanData);
                 }
+                else if (scanAnsType == SL_LIDAR_ANS_TYPE_MEASUREMENTT_ULTRA_DENSE_CAPSULED) {
+                    if (header_size < sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t)) {
+                        return SL_RESULT_INVALID_DATA;
+                    }
+                    _isScanning = true;
+                    _cachethread = CLASS_THREAD(SlamtecLidarDriver, _cacheUltraDenseCapsuledScanData);
+                    
+                }
                 else {
                     if (header_size < sizeof(sl_lidar_response_ultra_capsule_measurement_nodes_t)) {
                         return SL_RESULT_INVALID_DATA;
@@ -723,6 +732,14 @@ namespace sl {
             switch (_isSupportingMotorCtrl)
             {
             case MotorCtrlSupportNone:
+                if (_channel->getChannelType() == CHANNEL_TYPE_SERIALPORT) {
+                    ISerialPortChannel* serialChanel = (ISerialPortChannel*)_channel;
+                    if (!speed) {
+                        serialChanel->setDTR(true);
+                    }else{
+                        serialChanel->setDTR(false);
+                    }
+                }
                 break;
             case MotorCtrlSupportPwm:
                 sl_lidar_payload_motor_pwm_t motor_pwm;
@@ -1179,7 +1196,7 @@ namespace sl {
 
         void _disableDataGrabbing()
         {
-            //_clearRxDataCache();
+            _clearRxDataCache();
             _isScanning = false;
             _cachethread.join();
         }
@@ -1354,7 +1371,7 @@ namespace sl {
 
                     int dist_major2;
 
-                    sl_u32 scalelvl1 = 0, scalelvl2 = 0;
+                    sl_u32 scalelvl1 =0, scalelvl2 =0;
 
                     // prefetch next ...
                     if (pos == _countof(_cached_previous_ultracapsuledata.ultra_cabins) - 1) {
@@ -1684,6 +1701,225 @@ namespace sl {
             return SL_RESULT_OK;
         }
 
+        sl_result _waitUltraDenseCapsuledNode(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t& node, sl_u32 timeout = DEFAULT_TIMEOUT)
+        {
+            int  recvPos = 0;
+            sl_u32 startTs = getms();
+            sl_u8  recvBuffer[sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t)];
+            sl_u8* nodeBuffer = (sl_u8*)&node;
+            sl_u32 waitTime;
+            while ((waitTime = getms() - startTs) <= timeout) {
+                size_t remainSize = sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t) - recvPos;
+                size_t recvSize;
+                bool ans = _channel->waitForData(remainSize, timeout - waitTime, &recvSize);
+                if (!ans) return SL_RESULT_OPERATION_TIMEOUT;
+
+                if (recvSize > remainSize) recvSize = remainSize;
+                recvSize = _channel->read(recvBuffer, recvSize);
+
+                for (size_t pos = 0; pos < recvSize; ++pos) {
+                    sl_u8 currentByte = recvBuffer[pos];
+
+                    switch (recvPos) {
+                    case 0: // expect the sync bit 1
+                    {
+                        sl_u8 tmp = (currentByte >> 4);
+                        if (tmp == SL_LIDAR_RESP_MEASUREMENT_EXP_SYNC_1) {
+                            // pass
+                        }
+                        else {
+                            _is_previous_capsuledataRdy = false;
+                            continue;
+                        }
+
+                    }
+                    break;
+                    case 1: // expect the sync bit 2
+                    {
+                        sl_u8 tmp = (currentByte >> 4);
+                        if (tmp == SL_LIDAR_RESP_MEASUREMENT_EXP_SYNC_2) {
+                            // pass
+                        }
+                        else {
+                            recvPos = 0;
+                            _is_previous_capsuledataRdy = false;
+                            continue;
+                        }
+                    }
+                    break;
+                    }
+                    nodeBuffer[recvPos++] = currentByte;
+                    if (recvPos == sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t)) {
+                        // calc the checksum ...
+                        sl_u8 checksum = 0;
+                        sl_u8 recvChecksum = ((node.s_checksum_1 & 0xF) | (node.s_checksum_2 << 4));
+                        for (size_t cpos = offsetof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t, time_stamp);
+                            cpos < sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t); ++cpos)
+                        {
+                            checksum ^= nodeBuffer[cpos];
+                        }
+                        if (recvChecksum == checksum) {
+                            // only consider vaild if the checksum matches...
+                            if (node.start_angle_sync_q6 & SL_LIDAR_RESP_MEASUREMENT_EXP_SYNCBIT) {
+                                // this is the first capsule frame in logic, discard the previous cached data...
+                                _scan_node_synced = false;
+                                _is_previous_capsuledataRdy = false;
+                                return SL_RESULT_OK;
+                            }
+                            return SL_RESULT_OK;
+                        }
+                        _is_previous_capsuledataRdy = false;
+                        return SL_RESULT_INVALID_DATA;
+                    }
+                }
+            }
+            _is_previous_capsuledataRdy = false;
+            return SL_RESULT_OPERATION_TIMEOUT;
+        }
+
+        void _ultra_dense_capsuleToNormal(const sl_lidar_response_ultra_dense_capsule_measurement_nodes_t& capslue, sl_lidar_response_measurement_node_hq_t* nodebuffer, size_t& nodeCount)
+        {
+            static int lastNodeSyncBit = 0;
+            const sl_lidar_response_ultra_dense_capsule_measurement_nodes_t* ultra_dense_capsule = reinterpret_cast<const sl_lidar_response_ultra_dense_capsule_measurement_nodes_t*>(&capslue);
+            nodeCount = 0;
+            if (_is_previous_capsuledataRdy) {
+                int diffAngle_q8;
+                int currentStartAngle_q8 = ((ultra_dense_capsule->start_angle_sync_q6 & 0x7FFF) << 2);
+                int prevStartAngle_q8 = ((_cached_previous_ultra_dense_capsuledata.start_angle_sync_q6 & 0x7FFF) << 2);
+
+                diffAngle_q8 = (currentStartAngle_q8)-(prevStartAngle_q8);
+                if (prevStartAngle_q8 > currentStartAngle_q8) {
+                    diffAngle_q8 += (360 << 8);
+                }
+#define DISTANCE_THRESHOLD_TO_SCALE_1 2046
+#define DISTANCE_THRESHOLD_TO_SCALE_2 8187  // (2^11-1)*3 + 2046
+#define DISTANCE_THRESHOLD_TO_SCALE_3 24567
+                int angleInc_q16 = (diffAngle_q8 << 8) / 64;
+                int currentAngle_raw_q16 = (prevStartAngle_q8 << 8);
+                for (size_t pos = 0; pos < (_countof(_cached_previous_ultra_dense_capsuledata.cabins)*2); ++pos) {
+
+                    int angle_q6;
+                    int syncBit;
+                    size_t cabin_idx = pos >> 1;
+                    sl_u32 quality_dist_scale;
+                    if (!(pos&0x1)) {
+                         quality_dist_scale = _cached_previous_ultra_dense_capsuledata.cabins[cabin_idx].qualityl_distance_scale[0] | ((_cached_previous_ultra_dense_capsuledata.cabins[cabin_idx].qualityh_array & 0x0F) << 16);
+                    }
+                    else {
+                         quality_dist_scale = _cached_previous_ultra_dense_capsuledata.cabins[cabin_idx].qualityl_distance_scale[1] | ((_cached_previous_ultra_dense_capsuledata.cabins[cabin_idx].qualityh_array >> 4) << 16);
+                    }
+                    
+                    sl_u8 scale = quality_dist_scale & 0x3;
+                    sl_u8 quality = 0;
+                    int dist_q2 = 0;
+                    switch (scale) {
+                    case 0:
+                        quality = quality_dist_scale >> 12;
+                        dist_q2 = (quality_dist_scale & 0xFFC) * 2;
+                        break;
+                    case 1:
+                        quality = (quality_dist_scale >> 13)<<1;
+                        dist_q2 = (quality_dist_scale & 0x1FFC) * 3 +(DISTANCE_THRESHOLD_TO_SCALE_1<<2);
+                        break;
+                    case 2:
+                        quality = (quality_dist_scale >> 14) << 2;
+                        dist_q2 = (quality_dist_scale & 0x3FFC) * 4 + (DISTANCE_THRESHOLD_TO_SCALE_2<<2);
+                        break;
+                    case 3:
+                        quality = (quality_dist_scale >> 15) << 3;
+                        dist_q2 = (quality_dist_scale & 0x7FFC) * 5+ (DISTANCE_THRESHOLD_TO_SCALE_3<<2);
+                        break;
+                    }
+ 
+                    angle_q6 = (currentAngle_raw_q16 >> 10);
+
+                    syncBit = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < (angleInc_q16 << 1)) ? 1 : 0;
+                    syncBit = (syncBit ^ lastNodeSyncBit) & syncBit;//Ensure that syncBit is exactly detected
+                    if (syncBit) {
+                        _scan_node_synced = true;
+                    }
+
+                    currentAngle_raw_q16 += angleInc_q16;
+
+                    if (angle_q6 < 0) angle_q6 += (360 << 6);
+                    if (angle_q6 >= (360 << 6)) angle_q6 -= (360 << 6);
+
+
+                    sl_lidar_response_measurement_node_hq_t node;
+
+                    node.angle_z_q14 = sl_u16((angle_q6 << 8) / 90);
+                    node.flag = (syncBit | ((!syncBit) << 1));
+                    node.quality = quality;
+                    node.dist_mm_q2 = dist_q2;
+                    if (_scan_node_synced)
+                        nodebuffer[nodeCount++] = node;
+                    lastNodeSyncBit = syncBit;
+                }
+            }
+            else {
+                _scan_node_synced = false;
+            }
+
+            _cached_previous_ultra_dense_capsuledata = *ultra_dense_capsule;
+            _is_previous_capsuledataRdy = true;
+        }
+
+        sl_result _cacheUltraDenseCapsuledScanData()
+        {
+            //sl_lidar_response_capsule_measurement_nodes_t    capsule_node;
+            sl_lidar_response_ultra_dense_capsule_measurement_nodes_t ultra_dense_capsule_node;
+            sl_lidar_response_measurement_node_hq_t          local_buf[256];
+            size_t                                           count = 256;
+            sl_lidar_response_measurement_node_hq_t          local_scan[MAX_SCAN_NODES];
+            size_t                                           scan_count = 0;
+            Result<nullptr_t>                                ans = SL_RESULT_OK;
+            memset(local_scan, 0, sizeof(local_scan));
+
+            _waitUltraDenseCapsuledNode(ultra_dense_capsule_node); // // always discard the first data since it may be incomplete
+
+            while (_isScanning) {
+                ans = _waitUltraDenseCapsuledNode(ultra_dense_capsule_node);
+                if (!ans) {
+                    if ((sl_result)ans != SL_RESULT_OPERATION_TIMEOUT && (sl_result)ans != SL_RESULT_INVALID_DATA) {
+                        _isScanning = false;
+                        return SL_RESULT_OPERATION_FAIL;
+                    }
+                    else {
+                        // current data is invalid, do not use it.
+                        continue;
+                    }
+                }
+                _ultra_dense_capsuleToNormal(ultra_dense_capsule_node, local_buf, count);
+
+
+                for (size_t pos = 0; pos < count; ++pos) {
+                    if (local_buf[pos].flag & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT) {
+                        // only publish the data when it contains a full 360 degree scan 
+
+                        if ((local_scan[0].flag & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT)) {
+                            _lock.lock();
+                            memcpy(_cached_scan_node_hq_buf, local_scan, scan_count * sizeof(sl_lidar_response_measurement_node_hq_t));
+                            _cached_scan_node_hq_count = scan_count;
+                            _dataEvt.set();
+                            _lock.unlock();
+                        }
+                        scan_count = 0;
+                    }
+                    local_scan[scan_count++] = local_buf[pos];
+                    if (scan_count == _countof(local_scan)) scan_count -= 1; // prevent overflow
+
+                    //for interval retrieve
+                    {
+                        rp::hal::AutoLocker l(_lock);
+                        _cached_scan_node_hq_buf_for_interval_retrieve[_cached_scan_node_hq_count_for_interval_retrieve++] = local_buf[pos];
+                        if (_cached_scan_node_hq_count_for_interval_retrieve == _countof(_cached_scan_node_hq_buf_for_interval_retrieve)) _cached_scan_node_hq_count_for_interval_retrieve -= 1; // prevent overflow
+                    }
+                }
+            }
+            _isScanning = false;
+
+            return SL_RESULT_OK;
+        }
         sl_result _waitHqNode(sl_lidar_response_hq_capsule_measurement_nodes_t & node, sl_u32 timeout = DEFAULT_TIMEOUT)
         {
             if (!_isConnected) {
@@ -1961,7 +2197,13 @@ namespace sl {
         {
             if (!isConnected())
                 return SL_RESULT_OPERATION_FAIL;
-            _channel->flush();
+            if (_channel->getChannelType() != CHANNEL_TYPE_SERIALPORT) {
+                _channel->flush();
+            }
+            else {
+                _channel->clearReadCache();
+            }
+            
             return SL_RESULT_OK;
         }
 
@@ -1986,6 +2228,8 @@ namespace sl {
 
         sl_lidar_response_capsule_measurement_nodes_t       _cached_previous_capsuledata;
         sl_lidar_response_dense_capsule_measurement_nodes_t _cached_previous_dense_capsuledata;
+        sl_lidar_response_ultra_dense_capsule_measurement_nodes_t _cached_previous_ultra_dense_capsuledata;
+
         sl_lidar_response_ultra_capsule_measurement_nodes_t _cached_previous_ultracapsuledata;
         sl_lidar_response_hq_capsule_measurement_nodes_t _cached_previous_Hqdata;
         bool                                         _is_previous_capsuledataRdy;

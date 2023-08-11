@@ -104,7 +104,7 @@ namespace sl {
 			sl_result  _sendCommand(sl_u16 cmd, const void * payload = NULL, size_t payloadsize = 0 );
 			sl_result _waitResponseHeader(sl_lidar_ans_header_t * header, sl_u32 timeout = DEFAULT_TIMEOUT);
 			template <typename T>
-			sl_result _waitResponse(T &payload ,sl_u8 ansType, _u32 timeout = DEFAULT_TIMEOUT);
+			sl_result _waitResponse(T &payload ,sl_u8 ansType, sl_u32 timeout = DEFAULT_TIMEOUT);
 			void _disableDataGrabbing();
 			sl_result _waitNode(sl_lidar_response_measurement_node_t * node, sl_u32 timeout = DEFAULT_TIMEOUT);
 			sl_result _waitScanData(sl_lidar_response_measurement_node_t * nodebuffer, size_t & count, sl_u32 timeout = DEFAULT_TIMEOUT);
@@ -114,6 +114,12 @@ namespace sl {
 			void _capsuleToNormal(const sl_lidar_response_capsule_measurement_nodes_t & capsule, sl_lidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 			void _dense_capsuleToNormal(const sl_lidar_response_capsule_measurement_nodes_t & capsule, sl_lidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 			sl_result _cacheCapsuledScanData();
+
+			void _ultra_dense_capsuleToNormal(const sl_lidar_response_ultra_dense_capsule_measurement_nodes_t& capslue, sl_lidar_response_measurement_node_hq_t* nodebuffer, size_t& nodeCount);
+			sl_result _waitUltraDenseCapsuledNode(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t& node, sl_u32 timeout = DEFAULT_TIMEOUT);
+			sl_result _cacheUltraDenseCapsuledScanData();
+			
+
 			sl_result _waitHqNode(sl_lidar_response_hq_capsule_measurement_nodes_t & node, sl_u32 timeout = DEFAULT_TIMEOUT);
 			void _HqToNormal(const sl_lidar_response_hq_capsule_measurement_nodes_t & node_hq, sl_lidar_response_measurement_node_hq_t *nodebuffer, size_t &nodeCount);
 			sl_result _cacheHqScanData();
