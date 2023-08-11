@@ -152,6 +152,11 @@ namespace rp { namespace standalone{ namespace rplidar {
 		return (_lidarDrv)->setLidarIpConf(conf, timeout);
 	}
 
+    u_result RPlidarDriver::getLidarIpConf(rplidar_ip_conf_t& conf, _u32 timeout)
+    {
+        return (_lidarDrv)->getLidarIpConf(conf, timeout);
+    }
+
     u_result RPlidarDriver::getDeviceMacAddr(_u8* macAddrArray, _u32 timeoutInMs)
 	{
 		return (_lidarDrv)->getDeviceMacAddr(macAddrArray, timeoutInMs);

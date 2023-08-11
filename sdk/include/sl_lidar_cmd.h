@@ -141,6 +141,7 @@ typedef struct _sl_lidar_payload_new_bps_confirmation_t {
 // Added in FW ver 1.17
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED       0x82
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_HQ            0x83
+#define SL_LIDAR_ANS_TYPE_MEASUREMENTT_ULTRA_DENSE_CAPSULED 0x86
 
 
 // Added in FW ver 1.17
@@ -224,6 +225,22 @@ typedef struct _sl_lidar_response_dense_capsule_measurement_nodes_t
     sl_u16                            start_angle_sync_q6;
     sl_lidar_response_dense_cabin_nodes_t  cabins[40];
 } __attribute__((packed)) sl_lidar_response_dense_capsule_measurement_nodes_t;
+
+
+typedef struct _sl_lidar_response_ultra_dense_cabin_nodes_t {
+    sl_u16  qualityl_distance_scale[2];
+    sl_u8   qualityh_array;
+} __attribute__((packed)) sl_lidar_response_ultra_dense_cabin_nodes_t;
+
+typedef struct _sl_lidar_response_ultra_dense_capsule_measurement_nodes_t {
+    sl_u8                             s_checksum_1; // see [s_checksum_1]
+    sl_u8                             s_checksum_2; // see [s_checksum_1]
+    sl_u32                            time_stamp;
+    sl_u16                            dev_status;
+    sl_u16                            start_angle_sync_q6;
+    sl_lidar_response_ultra_dense_cabin_nodes_t  cabins[32];
+} __attribute__((packed)) sl_lidar_response_ultra_dense_capsule_measurement_nodes_t;
+
 
 // ext1 : x2 boost mode
 

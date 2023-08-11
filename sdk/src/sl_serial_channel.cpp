@@ -104,6 +104,10 @@ namespace sl {
             dtr ? _rxtxSerial->setDTR() : _rxtxSerial->clearDTR();
         }
 
+        int getChannelType() {
+            return CHANNEL_TYPE_SERIALPORT;
+        }
+
     private:
         rp::hal::serial_rxtx  * _rxtxSerial;
         bool _closePending;

@@ -743,7 +743,16 @@ public:
         }
 
     }
+    virtual u_result setPairAddress(const SocketAddress* pairAddress)
+    {
+        sockaddr_storage unspecAddr;
+        unspecAddr.ss_family = AF_UNSPEC;
 
+        const struct sockaddr* addr = pairAddress ? reinterpret_cast<const struct sockaddr*>(pairAddress->getPlatformData()) : reinterpret_cast<const struct sockaddr*>(&unspecAddr);
+        int ans = ::connect(_socket_fd, addr, (int)sizeof(sockaddr_storage));
+        return ans ? RESULT_OPERATION_FAIL : RESULT_OK;
+
+    }
 
     virtual u_result recvFrom(void *buf, size_t len, size_t & recv_len, SocketAddress * sourceAddr)
     {

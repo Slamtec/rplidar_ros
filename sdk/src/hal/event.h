@@ -42,8 +42,8 @@ public:
     enum
     {
         EVENT_OK = 1,
-        EVENT_TIMEOUT = -1,
         EVENT_FAILED = 0,
+        EVENT_TIMEOUT = 0xFFFFFFFFFFFFFFFF,
     };
     
     Event(bool isAutoReset = true, bool isSignal = false)
@@ -95,7 +95,7 @@ public:
         }
     }
     
-    int wait( unsigned long timeout = 0xFFFFFFFF )
+    unsigned long wait( unsigned long timeout = 0xFFFFFFFF )
     {
 #ifdef _WIN32
         switch (WaitForSingleObject(_event, timeout==0xFFFFFFF?INFINITE:(DWORD)timeout))
@@ -109,7 +109,7 @@ public:
         }
         return EVENT_OK;
 #else
-        int ans = EVENT_OK;
+        unsigned long ans = EVENT_OK;
         pthread_mutex_lock( &_cond_locker );
 
         if ( !_is_signalled )

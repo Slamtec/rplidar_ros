@@ -44,11 +44,12 @@ namespace rp { namespace standalone{ namespace rplidar {
     using namespace sl;
     typedef LidarScanMode RplidarScanMode;
 
-//enum {
-//    DRIVER_TYPE_SERIALPORT = 0x0,
-//    DRIVER_TYPE_TCP = 0x1,
-//    DRIVER_TYPE_UDP = 0x2,
-//};
+enum {
+   DRIVER_TYPE_SERIALPORT = 0x0,
+   DRIVER_TYPE_TCP = 0x1,
+   DRIVER_TYPE_UDP = 0x2,
+};
+
 class RPlidarDriver {
 public:
     enum {
@@ -160,13 +161,19 @@ public:
     /// \param timeout       The operation timeout value (in millisecond) for the serial port communication. 
     u_result checkMotorCtrlSupport(bool & support, _u32 timeout = DEFAULT_TIMEOUT);
 
-	///Set LPX series lidar's static IP address
+	///Set LPX and S2E series lidar's static IP address
 	///
 	/// \param conf             Network parameter that LPX series lidar owned
 	/// \param timeout          The operation timeout value (in millisecond) for the ethernet udp communication
 	u_result  setLidarIpConf(const rplidar_ip_conf_t& conf, _u32 timeout = DEFAULT_TIMEOUT);
 
-	///Get LPX series lidar's MAC address
+    ///Get LPX and S2E series lidar's static IP address
+    ///
+    /// \param conf             Network parameter that LPX series lidar owned
+    /// \param timeout          The operation timeout value (in millisecond) for the ethernet udp communication
+    u_result  getLidarIpConf(rplidar_ip_conf_t& conf, _u32 timeout = DEFAULT_TIMEOUT);
+
+	///Get LPX and S2E series lidar's MAC address
 	///
 	/// \param macAddrArray         The device MAC information returned from the LPX series lidar
 	u_result getDeviceMacAddr(_u8* macAddrArray, _u32 timeoutInMs = DEFAULT_TIMEOUT);

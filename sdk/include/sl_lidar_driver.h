@@ -180,6 +180,8 @@ namespace sl {
         */
         virtual void clearReadCache() = 0;
 
+        virtual int getChannelType() = 0;
+
     private:
 
     };
@@ -338,13 +340,19 @@ namespace sl {
         /// \param count         The number of sample nodes inside the given buffer
         virtual sl_result getFrequency(const LidarScanMode& scanMode, const sl_lidar_response_measurement_node_hq_t* nodes, size_t count, float& frequency) = 0;
 
-		///Set LPX series lidar's static IP address
+		///Set LPX and S2E series lidar's static IP address
 		///
 		/// \param conf             Network parameter that LPX series lidar owned
 		/// \param timeout          The operation timeout value (in millisecond) for the ethernet udp communication
 		virtual sl_result setLidarIpConf(const sl_lidar_ip_conf_t& conf, sl_u32 timeout = DEFAULT_TIMEOUT) = 0;
-
-		///Get LPX series lidar's MAC address
+       
+        ///Get LPX and S2E series lidar's static IP address
+        ///
+        /// \param conf             Network parameter that LPX series lidar owned
+        /// \param timeout          The operation timeout value (in millisecond) for the ethernet udp communication
+        virtual sl_result getLidarIpConf( sl_lidar_ip_conf_t& conf, sl_u32 timeout = DEFAULT_TIMEOUT) = 0;
+  // 
+		/////Get LPX series lidar's MAC address
 		///
 		/// \param macAddrArray         The device MAC information returned from the LPX series lidar
 		virtual sl_result getDeviceMacAddr(sl_u8* macAddrArray, sl_u32 timeoutInMs = DEFAULT_TIMEOUT) = 0;
