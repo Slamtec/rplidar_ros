@@ -2,6 +2,16 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update SDK.
+  * UltraDense protocol support
+  * support for stoppping A1 motor
+  * Optimize lidar driver for switching S2E workingmode
+* Bugfix:logical error
+* Install udev rules via debian.
+* Contributors: Tony Baltovski, deyou wang
+
 2.1.3 (2023-07-20)
 ------------------
 * Bugfix:auto standby mode not work
