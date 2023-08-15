@@ -2,8 +2,8 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.1.4 (2023-08-15)
+------------------
 * Update SDK.
   * UltraDense protocol support
   * support for stoppping A1 motor
