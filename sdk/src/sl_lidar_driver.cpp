@@ -560,7 +560,7 @@ namespace sl {
        
         sl_result grabScanDataHq(sl_lidar_response_measurement_node_hq_t* nodebuffer, size_t& count, sl_u32 timeout = DEFAULT_TIMEOUT)
         {
-            switch (_dataEvt.wait(timeout))
+            switch (static_cast<int>(_dataEvt.wait(timeout)))
             {
             case rp::hal::Event::EVENT_TIMEOUT:
                 count = 0;
