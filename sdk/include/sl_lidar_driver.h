@@ -38,6 +38,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <ros/ros.h>
+#define DEG2RAD(x) ((x)*M_PI/180.)
 
 #ifndef DEPRECATED
     #ifdef __GNUC__

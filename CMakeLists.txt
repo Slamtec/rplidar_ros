@@ -13,8 +13,24 @@ FILE(GLOB RPLIDAR_SDK_SRC
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rosconsole
+  rospy
+#   serial
+  std_msgs
+  std_srvs
   sensor_msgs
+  message_generation
+)
+
+add_message_files(
+  DIRECTORY msg
+  FILES AxLaserScan.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+        geometry_msgs
+        std_msgs
+        std_srvs
 )
 
 include_directories(
@@ -27,9 +43,11 @@ catkin_package()
 
 add_executable(rplidarNode src/node.cpp ${RPLIDAR_SDK_SRC})
 target_link_libraries(rplidarNode ${catkin_LIBRARIES})
+add_dependencies(rplidarNode ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(rplidarNodeClient src/client.cpp)
 target_link_libraries(rplidarNodeClient ${catkin_LIBRARIES})
+add_dependencies(rplidarNodeClient ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 install(TARGETS rplidarNode rplidarNodeClient
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
