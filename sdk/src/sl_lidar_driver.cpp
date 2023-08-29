@@ -41,6 +41,7 @@
 #include "sl_lidar_driver.h"
 #include "sl_crc.h" 
 #include <algorithm>
+#include "rplidar_ros/AxLaserScan.h"
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -205,6 +206,45 @@ namespace sl {
         std::sort(nodebuffer, nodebuffer + count, &angleLessThan<TNode>);
 
         return SL_RESULT_OK;
+    }
+
+    // pub ax laser scan code.
+    static rplidar_ros::AxLaserScan ax_laser_msg;
+
+    inline int16_t Util_degreeToI16(float degree)
+    {
+        return int16_t(int32_t(degree * (65536.0f / 360.0f)) % 65536);
+    }
+
+    static void assemble_scan(ros::Publisher &pub,
+                              const sl_lidar_response_measurement_node_hq_t *nodes,
+                              size_t node_count, ros::Time now,
+                              size_t assemble_count)
+    {
+        if (ax_laser_msg.ranges.size() == 0) // first pack
+        {
+            ax_laser_msg.header.stamp = now;
+        }
+
+        for (size_t i = 0; i < node_count; i++)
+        {
+            float range = (float)nodes[i].dist_mm_q2 / 4.0f / 1000; // m
+            float degree = getAngle(nodes[i]);                      // degree
+            ros::Duration time_delta = now - ax_laser_msg.header.stamp;
+            ax_laser_msg.ranges.push_back(range * 1000);
+            ax_laser_msg.angles.push_back(Util_degreeToI16(degree));
+            ax_laser_msg.time_deltas.push_back(time_delta.toSec() * 10000);
+            ax_laser_msg.intensities.push_back(nodes[i].quality);
+        }
+
+        if (ax_laser_msg.ranges.size() >= assemble_count)
+        {
+            pub.publish(ax_laser_msg);
+            ax_laser_msg.ranges.resize(0);
+            ax_laser_msg.angles.resize(0);
+            ax_laser_msg.intensities.resize(0);
+            ax_laser_msg.time_deltas.resize(0);
+        }
     }
 
     class SlamtecLidarDriver :public ILidarDriver
@@ -1650,6 +1690,16 @@ namespace sl {
 
             _waitCapsuledNode(capsule_node); // // always discard the first data since it may be incomplete
 
+            int laser_points_count = 3200;
+            std::string ax_topic_name ;
+            
+            ros::NodeHandle nh("~");
+            
+            nh.getParamCached("laser_points_count", laser_points_count);
+            nh.param<std::string>("ax_scan_topic", ax_topic_name, "/ax_laser_scan");
+            ros::Publisher scan_pub = nh.advertise<rplidar_ros::AxLaserScan>(ax_topic_name, 10);
+            ax_laser_msg.header.frame_id = "horizontal_laser_link";
+
             while (_isScanning) {
                 ans = _waitCapsuledNode(capsule_node);
                 if (!ans) {
@@ -1670,7 +1720,9 @@ namespace sl {
                     _dense_capsuleToNormal(capsule_node, local_buf, count);
                     break;
                 }
-                //
+
+                // publish axlaser scan and mark time.
+                assemble_scan(scan_pub, local_buf, count, ros::Time::now(), laser_points_count);
 
                 for (size_t pos = 0; pos < count; ++pos) {
                     if (local_buf[pos].flag & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT) {
