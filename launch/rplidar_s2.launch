@@ -6,5 +6,8 @@
   <param name="inverted"            type="bool"   value="false"/>
   <param name="angle_compensate"    type="bool"   value="true"/>
   <param name="scan_frequency"      type="double" value="10.0"/>
+  <param name="scan_topic"          type="string" value="scan_raw"/>
+  <param name="ax_scan_topic"       type="string" value="/ax_laser_scan"/>
+  <param name="laser_points_count"  type="int"    value="3200"/>
   </node>
 </launch>

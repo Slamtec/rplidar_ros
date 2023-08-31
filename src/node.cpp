@@ -239,8 +239,12 @@ int main(int argc, char * argv[]) {
     float max_distance;
     double scan_frequency;
     ros::NodeHandle nh;
-    ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
+
+    std::string topic_name;
+    nh_private.param<std::string>("scan_topic", topic_name, "/scan_raw");
+    ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>(topic_name, 10);
+
     nh_private.param<std::string>("channel_type", channel_type, "serial");
     nh_private.param<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
     nh_private.param<int>("tcp_port", tcp_port, 20108);
