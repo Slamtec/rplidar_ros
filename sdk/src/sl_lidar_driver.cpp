@@ -210,6 +210,7 @@ namespace sl {
 
     // pub ax laser scan code.
     static rplidar_ros::AxLaserScan ax_laser_msg;
+    static size_t point_count = 0; 
 
     inline int16_t Util_degreeToI16(float degree)
     {
@@ -226,6 +227,7 @@ namespace sl {
             ax_laser_msg.header.stamp = now;
         }
 
+        point_count += node_count;
         for (size_t i = 0; i < node_count; i++)
         {
             float range = (float)nodes[i].dist_mm_q2 / 4.0f / 1000; // m
@@ -240,13 +242,14 @@ namespace sl {
             }
         }
 
-        if (ax_laser_msg.ranges.size() >= assemble_count)
+        if (point_count >= assemble_count)
         {
             pub.publish(ax_laser_msg);
             ax_laser_msg.ranges.resize(0);
             ax_laser_msg.angles.resize(0);
             ax_laser_msg.intensities.resize(0);
             ax_laser_msg.time_deltas.resize(0);
+            point_count = 0;
         }
     }
 
