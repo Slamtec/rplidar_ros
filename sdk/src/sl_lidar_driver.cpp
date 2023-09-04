@@ -231,10 +231,13 @@ namespace sl {
             float range = (float)nodes[i].dist_mm_q2 / 4.0f / 1000; // m
             float degree = getAngle(nodes[i]);                      // degree
             ros::Duration time_delta = now - ax_laser_msg.header.stamp;
-            ax_laser_msg.ranges.push_back(range * 1000);
-            ax_laser_msg.angles.push_back(Util_degreeToI16(degree));
-            ax_laser_msg.time_deltas.push_back(time_delta.toSec() * 10000);
-            ax_laser_msg.intensities.push_back(nodes[i].quality);
+            if (range > 0)
+            {
+                ax_laser_msg.ranges.push_back(range * 1000);
+                ax_laser_msg.angles.push_back(Util_degreeToI16(degree));
+                ax_laser_msg.time_deltas.push_back(time_delta.toSec() * 10000);
+                ax_laser_msg.intensities.push_back(nodes[i].quality);
+            }
         }
 
         if (ax_laser_msg.ranges.size() >= assemble_count)
