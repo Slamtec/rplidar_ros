@@ -322,7 +322,12 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
 
     if ( isOpened() )
     {
-        if ( ioctl(serial_fd, FIONREAD, returned_size) == -1) return ANS_DEV_ERR;
+        int nread;
+
+        if ( ioctl(serial_fd, FIONREAD, &nread) == -1) return ANS_DEV_ERR;
+
+        *returned_size = nread;
+
         if (*returned_size >= data_count)
         {
             return 0;
@@ -372,17 +377,11 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
             {
                 return 0;
             }
-            else 
-            {
-                int remain_timeout = timeout_val.tv_sec*1000000 + timeout_val.tv_usec;
-                int expect_remain_time = (data_count - *returned_size)*1000000*8/_baudrate;
-                if (remain_timeout > expect_remain_time)
-                    usleep(expect_remain_time);
-            }
         }
         
     }
 
+    *returned_size=0;
     return ANS_DEV_ERR;
 }
 
@@ -425,7 +424,7 @@ void raw_serial::cancelOperation()
     _operation_aborted = true;
     if (_selfpipe[1] == -1) return;
 
-    ::write(_selfpipe[1], "x", 1);
+    (int)::write(_selfpipe[1], "x", 1);
 }
 
 _u32 raw_serial::getTermBaudBitmap(_u32 baud)

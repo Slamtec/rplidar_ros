@@ -113,6 +113,8 @@ typedef sl_lidar_payload_new_bps_confirmation_t  rplidar_payload_new_bps_confirm
 #define RPLIDAR_ANS_TYPE_GET_LIDAR_CONF                          SL_LIDAR_ANS_TYPE_GET_LIDAR_CONF
 #define RPLIDAR_ANS_TYPE_SET_LIDAR_CONF                          SL_LIDAR_ANS_TYPE_SET_LIDAR_CONF
 #define RPLIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED              SL_LIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED
+#define RPLIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED        SL_LIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED
+
 #define RPLIDAR_ANS_TYPE_ACC_BOARD_FLAG                          SL_LIDAR_ANS_TYPE_ACC_BOARD_FLAG
 
 #define RPLIDAR_RESP_ACC_BOARD_FLAG_MOTOR_CTRL_SUPPORT_MASK      SL_LIDAR_RESP_ACC_BOARD_FLAG_MOTOR_CTRL_SUPPORT_MASK
@@ -149,7 +151,7 @@ typedef sl_lidar_response_cabin_nodes_t rplidar_response_cabin_nodes_t;
 typedef sl_lidar_response_capsule_measurement_nodes_t         rplidar_response_capsule_measurement_nodes_t;
 typedef sl_lidar_response_dense_cabin_nodes_t                 rplidar_response_dense_cabin_nodes_t;
 typedef sl_lidar_response_dense_capsule_measurement_nodes_t   rplidar_response_dense_capsule_measurement_nodes_t;
-
+typedef sl_lidar_response_ultra_dense_capsule_measurement_nodes_t rplidar_response_ultra_dense_capsule_measurement_nodes_t;
 // ext1 : x2 boost mode
 
 #define RPLIDAR_RESP_MEASUREMENT_EXP_ULTRA_MAJOR_BITS     SL_LIDAR_RESP_MEASUREMENT_EXP_ULTRA_MAJOR_BITS

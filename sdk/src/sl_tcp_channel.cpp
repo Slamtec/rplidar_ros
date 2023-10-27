@@ -48,12 +48,12 @@ namespace sl {
         bool bind(const std::string & ip, sl_s32 port)
         {
             _socket = rp::net::SocketAddress(ip.c_str(), port);
-            return SL_RESULT_OK;
+            return true;
         }
 
         bool open()
         {
-            if(SL_IS_FAIL(bind(_ip, _port)))
+            if(!bind(_ip, _port))
                 return false;
             return IS_OK(_binded_socket->connect(_socket));
             
@@ -67,6 +67,21 @@ namespace sl {
         void flush()
         {
         
+        }
+
+        sl_result waitForDataExt(size_t& size_hint, sl_u32 timeoutInMs)
+        {
+            u_result ans;
+            size_hint = 0;
+            ans = _binded_socket->waitforData(timeoutInMs);
+
+            switch (ans) {
+            case RESULT_OK:
+                size_hint = 1024; //dummy value
+                break;
+            }
+
+            return ans;
         }
 
         bool waitForData(size_t size, sl_u32 timeoutInMs, size_t* actualReady)
@@ -86,7 +101,7 @@ namespace sl {
         {
             size_t lenRec = 0;
             _binded_socket->recv(buffer, size, lenRec);
-            return lenRec;
+            return (int)lenRec;
         }
 
         void clearReadCache() {}

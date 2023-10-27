@@ -33,6 +33,11 @@
 
 #pragma once
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200)
+#endif
+
 #include "sl_lidar_protocol.h"
 
  // Commands
@@ -101,7 +106,6 @@ typedef struct _sl_lidar_payload_hq_scan_t
 typedef struct _sl_lidar_payload_get_scan_conf_t
 {
     sl_u32  type;
-    sl_u8   reserved[32];
 } __attribute__((packed)) sl_lidar_payload_get_scan_conf_t;
 
 typedef struct _sl_payload_set_scan_conf_t {
@@ -137,21 +141,24 @@ typedef struct _sl_lidar_payload_new_bps_confirmation_t {
 #define SL_LIDAR_ANS_TYPE_DEVINFO          0x4
 #define SL_LIDAR_ANS_TYPE_DEVHEALTH        0x6
 
-#define SL_LIDAR_ANS_TYPE_MEASUREMENT                0x81
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT                       0x81
 // Added in FW ver 1.17
-#define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED       0x82
-#define SL_LIDAR_ANS_TYPE_MEASUREMENT_HQ            0x83
-#define SL_LIDAR_ANS_TYPE_MEASUREMENTT_ULTRA_DENSE_CAPSULED 0x86
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED              0x82
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT_HQ                    0x83
+//added in FW ver 1.23alpha
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED_ULTRA        0x84
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED        0x85
+#define SL_LIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED  0x86
 
 
 // Added in FW ver 1.17
 #define SL_LIDAR_ANS_TYPE_SAMPLE_RATE      0x15
-//added in FW ver 1.23alpha
-#define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED_ULTRA  0x84
+
 //added in FW ver 1.24
 #define SL_LIDAR_ANS_TYPE_GET_LIDAR_CONF     0x20
 #define SL_LIDAR_ANS_TYPE_SET_LIDAR_CONF     0x21
-#define SL_LIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED        0x85
+
+
 #define SL_LIDAR_ANS_TYPE_ACC_BOARD_FLAG   0xFF
 
 #define SL_LIDAR_RESP_ACC_BOARD_FLAG_MOTOR_CTRL_SUPPORT_MASK      (0x1)
@@ -300,6 +307,11 @@ typedef struct _sl_lidar_response_hq_capsule_measurement_nodes_t
 #define SL_LIDAR_CONF_LIDAR_MAC_ADDR                 0x00000079
 #define SL_LIDAR_CONF_SCAN_MODE_TYPICAL              0x0000007C
 #define SL_LIDAR_CONF_SCAN_MODE_NAME                 0x0000007F
+
+
+#define SL_LIDAR_CONF_MODEL_REVISION_ID              0x00000080
+#define SL_LIDAR_CONF_MODEL_NAME_ALIAS               0x00000081
+
 #define SL_LIDAR_CONF_DETECTED_SERIAL_BPS            0x000000A1
 
 #define SL_LIDAR_CONF_LIDAR_STATIC_IP_ADDR           0x0001CCC0
@@ -314,6 +326,7 @@ typedef struct _sl_lidar_response_get_lidar_conf
 
 typedef struct _sl_lidar_response_set_lidar_conf
 {
+    sl_u32 type;
     sl_u32 result;
 }__attribute__((packed)) sl_lidar_response_set_lidar_conf_t;
 
@@ -368,4 +381,8 @@ typedef struct  _sl_lidar_response_desired_rot_speed_t{
 
 #if defined(_WIN32)
 #pragma pack()
+#endif
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
 #endif

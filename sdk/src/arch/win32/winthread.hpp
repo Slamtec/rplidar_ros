@@ -61,10 +61,10 @@ u_result Thread::terminate()
     }
 }
 
-u_result Thread::setPriority( priority_val_t p)
+u_result Thread::SetSelfPriority( priority_val_t p)
 {
-	if (!this->_handle) return RESULT_OPERATION_FAIL;
-
+    HANDLE selfHandle = GetCurrentThread();
+	
 	int win_priority =  THREAD_PRIORITY_NORMAL;
 	switch(p)
 	{
@@ -85,7 +85,7 @@ u_result Thread::setPriority( priority_val_t p)
 		break;
 	}
 
-	if (SetThreadPriority(reinterpret_cast<HANDLE>(this->_handle), win_priority))
+	if (SetThreadPriority(selfHandle, win_priority))
 	{
 		return RESULT_OK;
 	}

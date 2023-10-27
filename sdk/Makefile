@@ -42,10 +42,20 @@ CXXSRC += src/sl_lidar_driver.cpp \
           src/hal/thread.cpp\
           src/sl_crc.cpp\
 	      src/sl_serial_channel.cpp\
-	      src/sl_tcp_channel.cpp\
+	      src/sl_lidarprotocol_codec.cpp\
+          src/sl_async_transceiver.cpp\
+          src/sl_tcp_channel.cpp\
 	      src/sl_udp_channel.cpp
 
+
 C_INCLUDES += -I$(CURDIR)/include -I$(CURDIR)/src
+
+
+#dataunpacker
+CXXSRC += $(shell find $(CURDIR)/src/dataunpacker/ -name "*.cpp")
+
+C_INCLUDES += -I$(CURDIR)/src/dataunpacker  -I$(CURDIR)/src/dataunpacker/unpacker
+
 
 ifeq ($(BUILD_TARGET_PLATFORM),Linux)
 CXXSRC += src/arch/linux/net_serial.cpp \

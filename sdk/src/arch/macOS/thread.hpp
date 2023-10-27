@@ -56,9 +56,8 @@ u_result Thread::terminate()
     return RESULT_OK;
 }
 
-u_result Thread::setPriority( priority_val_t p)
+u_result Thread::SetSelfPriority( priority_val_t p)
 {
-	if (!this->_handle) return RESULT_OPERATION_FAIL;
     // simply ignore this request
 	return  RESULT_OK;
 }
@@ -73,6 +72,7 @@ u_result Thread::join(unsigned long timeout)
     if (!this->_handle) return RESULT_OK;
     
     pthread_join((pthread_t)(this->_handle), NULL);
+    this->_handle = 0;
     return RESULT_OK;
 }
 

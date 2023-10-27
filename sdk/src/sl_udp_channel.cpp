@@ -47,12 +47,12 @@ namespace sl {
 		bool bind(const std::string & ip, sl_s32 port)
         {
             _socket = rp::net::SocketAddress(ip.c_str(), port);
-            return SL_RESULT_OK;
+            return true;
         }
 
         bool open()
         {
-            if(SL_IS_FAIL(bind(_ip, _port)))
+            if(!bind(_ip, _port))
                 return false;
             return SL_IS_OK(_binded_socket->setPairAddress(&_socket));         
         }
@@ -64,10 +64,25 @@ namespace sl {
         }
         void flush()
         {
-        
+            clearReadCache();
         }
 
-		bool waitForData(size_t size, sl_u32 timeoutInMs, size_t* actualReady)
+        sl_result waitForDataExt(size_t& size_hint, sl_u32 timeoutInMs)
+        {
+            u_result ans;
+            size_hint = 0;
+            ans = _binded_socket->waitforData(timeoutInMs);
+
+            switch (ans) {
+            case RESULT_OK:
+                size_hint = 1024; //dummy value
+                break;
+            }
+
+            return ans;
+        }
+
+        bool waitForData(size_t size, sl_u32 timeoutInMs, size_t* actualReady)
         {
             if (actualReady)
                 *actualReady = size;
@@ -77,28 +92,21 @@ namespace sl {
 
         int write(const void* data, size_t size)
         {
-            return _binded_socket->sendTo(_socket, data, size);
+            return _binded_socket->sendTo(nullptr, data, size);
         }
 
         int read(void* buffer, size_t size)
         {
-            u_result ans;
-            size_t recCnt = 0;
-            size_t lenRec = 0;
-            while (size > recCnt)
-            {
-				sl_u8 *temp = (sl_u8 *)buffer+recCnt;
-                ans = _binded_socket->recvFrom(temp, size, lenRec);
-                recCnt += lenRec;
-                if (ans)
-                    break;
-            }
-            return recCnt;
+            size_t actualGet;
+
+            u_result ans = _binded_socket->recvFrom(buffer, size, actualGet);
+            if (IS_FAIL(ans)) return 0;
+            return actualGet;
         
         }
 
         void clearReadCache() {
-          _binded_socket->clearRxCache();
+            _binded_socket->clearRxCache();
         }
 
         void setStatus(_u32 flag){}
