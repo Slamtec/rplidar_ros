@@ -50,8 +50,10 @@ static inline void delay(_word_size_t ms){
 namespace rp{ namespace arch{
 
 _u64 rp_getus();
-_u32 rp_getms();
+_u64 rp_getms();
 
 }}
 
 #define getms() rp::arch::rp_getms()
+#define getus() rp::arch::rp_getus()
+

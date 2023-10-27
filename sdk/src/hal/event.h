@@ -42,8 +42,8 @@ public:
     enum
     {
         EVENT_OK = 1,
+        EVENT_TIMEOUT = 0xFFFFFFFF,
         EVENT_FAILED = 0,
-        EVENT_TIMEOUT = 0xFFFFFFFFFFFFFFFF,
     };
     
     Event(bool isAutoReset = true, bool isSignal = false)
@@ -58,7 +58,15 @@ public:
         _event = CreateEvent(NULL, isAutoReset?FALSE:TRUE, isSignal?TRUE:FALSE, NULL); 
 #else
         pthread_mutex_init(&_cond_locker, NULL);
-        pthread_cond_init(&_cond_var, NULL);
+        pthread_condattr_init(&_cond_attr);
+#ifdef _MACOS
+        // sadly, there is no monotonic clock support for pthread cond variable on MACOS
+        // if time slew is a big issue, try to reimplement it using kqueue/kevent
+#else
+        pthread_condattr_setclock(&_cond_attr, CLOCK_MONOTONIC);
+#endif
+        pthread_cond_init(&_cond_var, &_cond_attr);
+       
 #endif
     }
 
@@ -119,19 +127,30 @@ public:
                     pthread_cond_wait(&_cond_var,&_cond_locker);
                 }else
                 {
+                    int timewaitresult = 0;
+#ifdef _MACOS
                     timespec wait_time;
-                    timeval now;
-                    gettimeofday(&now,NULL);
+                    
+                    wait_time.tv_sec = timeout / 1000;
+                    wait_time.tv_nsec = (timeout%1000)*1000000ULL;
+                
+                    timewaitresult = pthread_cond_timedwait_relative_np(&_cond_var,&_cond_locker,&wait_time);
+#else
+                    timespec wait_time;
+                    clock_gettime(CLOCK_MONOTONIC, &wait_time);
 
-                    wait_time.tv_sec = timeout/1000 + now.tv_sec;
-                    wait_time.tv_nsec = (timeout%1000)*1000000ULL + now.tv_usec*1000;
+                    wait_time.tv_sec += timeout / 1000;
+                    wait_time.tv_nsec += (timeout%1000)*1000000ULL;
                 
                     if (wait_time.tv_nsec >= 1000000000)
                     {
                        ++wait_time.tv_sec;
                        wait_time.tv_nsec -= 1000000000;
                     }
-                    switch (pthread_cond_timedwait(&_cond_var,&_cond_locker,&wait_time))
+                    timewaitresult = pthread_cond_timedwait(&_cond_var,&_cond_locker,&wait_time);
+#endif
+
+                    switch (timewaitresult)
                     {
                     case 0:
                         // signalled
@@ -149,7 +168,7 @@ public:
             }
         }
           
-        assert(_is_signalled);
+        //assert(_is_signalled);
 
         if ( _isAutoReset )
         {
@@ -179,6 +198,7 @@ protected:
 #else
         pthread_cond_t         _cond_var;
         pthread_mutex_t        _cond_locker;
+        pthread_condattr_t     _cond_attr;
         bool                   _is_signalled;
         bool                   _isAutoReset;
 #endif

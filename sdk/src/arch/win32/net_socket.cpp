@@ -235,16 +235,16 @@ u_result SocketAddress::getAddressAsString(char * buffer, size_t buffersize) con
     switch (net_family) {
         case AF_INET:
             ans = _inet_ntop(net_family, &reinterpret_cast<const sockaddr_in *>(_platform_data)->sin_addr,
-                            buffer, buffersize);
+                            buffer, (int)buffersize);
         break;
 
         case AF_INET6:
             ans = _inet_ntop(net_family, &reinterpret_cast<const sockaddr_in6 *>(_platform_data)->sin6_addr,
-                            buffer, buffersize);
+                            buffer, (int)buffersize);
 
         break;
     }
-    return ans<=0?RESULT_OPERATION_FAIL:RESULT_OK;
+    return (ans==NULL)?RESULT_OPERATION_FAIL:RESULT_OK;
 }
 
 
@@ -464,22 +464,59 @@ public:
   
     virtual u_result connect(const SocketAddress & pairAddress)
     {
+        u_long mode_block = 0;
+        u_long mode_notBlock = 1;
+        
+        //set to non block mode
+        if (SOCKET_ERROR == ioctlsocket(_socket_fd, (long)FIONBIO, &mode_notBlock))
+        {
+            return RESULT_OPERATION_FAIL;
+        }
+
+        struct timeval tm;  
+        tm.tv_sec  = 2;  
+        tm.tv_usec = 0;  
+        int ret = -1;  
+
         const struct sockaddr * addr = reinterpret_cast<const struct sockaddr *>(pairAddress.getPlatformData());
         int ans = ::connect(_socket_fd, addr, (int)sizeof(sockaddr_storage));
         if (!ans) return RESULT_OK;
 
+        fd_set set;  
+        FD_ZERO(&set);  
+        FD_SET(_socket_fd, &set);
 
-        switch (WSAGetLastError()) {
-            case WSAEAFNOSUPPORT:
-                return RESULT_OPERATION_NOT_SUPPORT;
-#if 0
-            case EINPROGRESS:
-                return RESULT_OK; //treat async connection as good status
-#endif
-            case WSAETIMEDOUT:
-                return RESULT_OPERATION_TIMEOUT;
-            default:
-                return RESULT_OPERATION_FAIL;
+        if (select(-1, NULL, &set, NULL, &tm) <= 0)  
+        {  
+            ret = -1; // error(select error or timeout)  
+            return RESULT_OPERATION_TIMEOUT;
+        }  
+        
+        int error = -1;  
+        int optLen = sizeof(int);  
+        getsockopt(_socket_fd, SOL_SOCKET, SO_ERROR, (char*)&error, &optLen);   
+
+        if (0 != error)  
+        {  
+            ret = -1; // error  
+        }  
+        else  
+        {  
+            ret = 1;  // correct  
+        }  
+
+        //set back to block mode
+        if (SOCKET_ERROR == ioctlsocket(_socket_fd, (long)FIONBIO, &mode_block))
+        {
+            return RESULT_OPERATION_FAIL;
+        }
+        if(1 == ret)  
+        {
+            return RESULT_OK;
+        }
+        else
+        {
+            return RESULT_OPERATION_FAIL;
         }
     }
       
@@ -511,7 +548,7 @@ public:
 
     virtual u_result send(const void * buffer, size_t len) 
     {
-        int ans = ::send( _socket_fd, (const char *)buffer, len, 0);
+        int ans = ::send( _socket_fd, (const char *)buffer, (int)len, 0);
         if (ans != SOCKET_ERROR ) {
             assert(ans == (int)len);
 
@@ -530,7 +567,7 @@ public:
 
     virtual u_result recv(void *buf, size_t len, size_t & recv_len)
     {
-        int ans = ::recv( _socket_fd, (char *)buf, len, 0);
+        int ans = ::recv( _socket_fd, (char *)buf, (int)len, 0);
 		//::setsockopt(_socket_fd, IPPROTO_TCP, TCP_QUICKACK,  (const char *)1, sizeof(int));
 		//::setsockopt(_socket_fd, IPPROTO_TCP, TCP_QUICKACK, (int[]){1}, sizeof(int))
         if (ans == SOCKET_ERROR) {
@@ -626,7 +663,7 @@ public:
         timeval tv;
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;
-        int ans = ::select(_socket_fd+1, &rdset, NULL, NULL, &tv);
+        int ans = ::select((int)_socket_fd+1, &rdset, NULL, NULL, &tv);
 
         switch (ans) {
             case 1:
@@ -767,15 +804,24 @@ public:
                 return RESULT_OPERATION_FAIL;
         }
     }
-/*
-    virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len)
+
+    virtual u_result setPairAddress(const SocketAddress * pairAddress)
     {
-        const struct sockaddr * addr = reinterpret_cast<const struct sockaddr *>(target.getPlatformData());
-		//const struct sockaddr* addr = &target ? reinterpret_cast<const struct sockaddr*>(target.getPlatformData()) : NULL;
-		//int dest_addr_size = (&target ? sizeof(sockaddr_storage) : 0);
-        assert(addr);
-        int ans = ::sendto( _socket_fd, (const char *)buffer, (int)len, 0, addr, (int)sizeof(sockaddr_storage));
-		//int ans = ::sendto(_socket_fd, (const char*)buffer, (int)len, 0, addr, dest_addr_size);
+        sockaddr_storage unspecAddr;
+        unspecAddr.ss_family = AF_UNSPEC;
+
+        const struct sockaddr * addr = pairAddress ? reinterpret_cast<const struct sockaddr *>(pairAddress->getPlatformData()) : reinterpret_cast<const struct sockaddr *>(&unspecAddr);
+        int ans = ::connect(_socket_fd, addr, (int)sizeof(sockaddr_storage));
+        return ans? RESULT_OPERATION_FAIL: RESULT_OK;
+
+    }
+
+    virtual u_result sendTo(const SocketAddress * target, const void * buffer, size_t len)
+    {
+
+        const struct sockaddr * addr = target?reinterpret_cast<const struct sockaddr *>(target->getPlatformData()): NULL;
+        int dest_addr_size = (target ? sizeof(sockaddr_storage) : 0);
+        int ans = ::sendto( _socket_fd, (const char *)buffer, (int)len, 0, addr, dest_addr_size);
         if (ans != SOCKET_ERROR) {
             assert(ans == (int)len);
             return RESULT_OK;
@@ -791,7 +837,7 @@ public:
         }
 
     }
-*/
+
     virtual u_result clearRxCache()
     {
         timeval tv;
@@ -810,38 +856,6 @@ public:
             recv(_socket_fd, recv_data, 1, 0);
         }
         return RESULT_OK;
-    }
-
-	virtual u_result sendTo(const SocketAddress & target, const void * buffer, size_t len)
-    {
-        const struct sockaddr* addr = &target ? reinterpret_cast<const struct sockaddr*>(target.getPlatformData()) : NULL;
-        int dest_addr_size = (&target ? sizeof(sockaddr_storage) : 0);
-        int ans = ::sendto(_socket_fd, (const char*)buffer, (int)len, 0, addr, dest_addr_size);
-        if (ans != SOCKET_ERROR) {
-            assert(ans == (int)len);
-            return RESULT_OK;
-        } else {
-           switch(WSAGetLastError()) {
-            case WSAETIMEDOUT:
-                return RESULT_OPERATION_TIMEOUT;
-            case WSAEMSGSIZE:
-                return RESULT_INVALID_DATA;
-            default:
-                return RESULT_OPERATION_FAIL;
-            }
-        }
-
-    }
-	
-	virtual u_result setPairAddress(const SocketAddress *pairAddress)
-    {
-		sockaddr_storage unspecAddr;
-        unspecAddr.ss_family = AF_UNSPEC;
-
-        const struct sockaddr* addr = pairAddress ? reinterpret_cast<const struct sockaddr*>(pairAddress->getPlatformData()) : reinterpret_cast<const struct sockaddr*>(&unspecAddr);
-        int ans = ::connect(_socket_fd, addr, (int)sizeof(sockaddr_storage));
-        return ans ? RESULT_OPERATION_FAIL : RESULT_OK;
-
     }
 
 
@@ -905,7 +919,7 @@ StreamSocket * StreamSocket::CreateSocket(SocketBase::socket_family_t family)
 
 
     int socket_family = _socketHalFamilyToOSFamily(family);
-    int socket_fd = ::socket(socket_family, SOCK_STREAM, 0);
+    SOCKET socket_fd = ::socket(socket_family, SOCK_STREAM, 0);
     if (socket_fd == -1) return NULL;
     StreamSocket * newborn = static_cast<StreamSocket *>(new rp::arch::net::StreamSocketImpl(socket_fd));
     return newborn;
@@ -919,7 +933,7 @@ DGramSocket * DGramSocket::CreateSocket(SocketBase::socket_family_t family)
     int socket_family = _socketHalFamilyToOSFamily(family);
 
 
-    int socket_fd = ::socket(socket_family, (family==SOCKET_FAMILY_RAW)?SOCK_RAW:SOCK_DGRAM, 0);
+    SOCKET socket_fd = ::socket(socket_family, (family == SOCKET_FAMILY_RAW) ? SOCK_RAW : SOCK_DGRAM, 0);
     if (socket_fd == -1) return NULL;
     DGramSocket * newborn = static_cast<DGramSocket *>(new rp::arch::net::DGramSocketImpl(socket_fd));
     return newborn;

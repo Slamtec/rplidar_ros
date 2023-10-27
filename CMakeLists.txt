@@ -7,6 +7,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 FILE(GLOB RPLIDAR_SDK_SRC 
   "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/dataunpacker/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/dataunpacker/unpacker/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/*.cpp"
 )
