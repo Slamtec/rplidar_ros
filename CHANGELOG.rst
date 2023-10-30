@@ -2,6 +2,15 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update README
+* Add launch file for rplidar C1
+* Update SDK.
+  * Re-implemented the data retrieving logic based on async fetching and decoding mechanism to improve performance
+  * RPLIDAR C1 support
+* Contributors: deyou wang
+
 2.1.4 (2023-08-15)
 ------------------
 * Update SDK.
