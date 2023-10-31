@@ -65,7 +65,7 @@ typedef _u8            _word_size_t;
 typedef _u64           _word_size_t;
 #define THREAD_PROC    __stdcall
 #elif defined (WIN32)
-typedef _u32           _word_size_t;
+typedef size_t         _word_size_t;
 #define THREAD_PROC    __stdcall
 #elif defined (__GNUC__)
 typedef unsigned long  _word_size_t;
@@ -77,8 +77,8 @@ typedef _u32            _word_size_t;
 
 
 
-#define __le 
-#define __be
+//#define __le 
+//#define __be
 
 #define _multi_thread
 #define _single_thread

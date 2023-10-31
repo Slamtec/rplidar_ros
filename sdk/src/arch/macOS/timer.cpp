@@ -36,18 +36,19 @@
 
 
 namespace rp{ namespace arch{
-_u64 getus()
+_u64 rp_getus()
 {
-    timeval now;
-    gettimeofday(&now,NULL);
-    return now.tv_sec*1000000 + now.tv_usec;
+    struct timespec t;
+    t.tv_sec = t.tv_nsec = 0;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec*1000000LL + t.tv_nsec/1000;
 }
-    
-_u32 rp_getms()
+_u64 rp_getms()
 {
-    timeval now;
-    gettimeofday(&now,NULL);
-    return now.tv_sec*1000L + now.tv_usec/1000L;
+    struct timespec t;
+    t.tv_sec = t.tv_nsec = 0;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec*1000L + t.tv_nsec/1000000L;
 }
-    
+
 }}

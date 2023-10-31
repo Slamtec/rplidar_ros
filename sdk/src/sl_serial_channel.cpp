@@ -76,6 +76,28 @@ namespace sl {
             _rxtxSerial->flush(0);
         }
 
+        sl_result waitForDataExt(size_t& size_hint, sl_u32 timeoutInMs)
+        {
+            _word_size_t result;
+            size_t size_holder;
+            size_hint = 0;
+
+            if (_closePending) return  RESULT_OPERATION_TIMEOUT;
+
+            if (!_rxtxSerial->isOpened()) {
+                return RESULT_OPERATION_FAIL;
+            }
+
+            result = _rxtxSerial->waitfordata(1, timeoutInMs, &size_holder);
+            size_hint = size_holder;
+            if (result == (_word_size_t)rp::hal::serial_rxtx::ANS_DEV_ERR)
+                return RESULT_OPERATION_FAIL;
+            if (result == (_word_size_t)rp::hal::serial_rxtx::ANS_TIMEOUT)
+                return RESULT_OPERATION_TIMEOUT;
+
+            return RESULT_OK;
+        }
+
         bool waitForData(size_t size, sl_u32 timeoutInMs, size_t* actualReady)
         {
             if (_closePending) return false;
@@ -91,7 +113,7 @@ namespace sl {
         {
             size_t lenRec = 0;
             lenRec = _rxtxSerial->recvdata((sl_u8 *)buffer, size);
-            return lenRec;
+            return (int)lenRec;
         }
 
         void clearReadCache()

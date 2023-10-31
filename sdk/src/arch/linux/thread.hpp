@@ -35,6 +35,10 @@
 #include "arch/linux/arch_linux.h"
 
 #include <sched.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 namespace rp{ namespace hal{
 
@@ -57,52 +61,95 @@ u_result Thread::terminate()
     return pthread_cancel((pthread_t)this->_handle)==0?RESULT_OK:RESULT_OPERATION_FAIL;
 }
 
-u_result Thread::setPriority( priority_val_t p)
+u_result Thread::SetSelfPriority( priority_val_t p)
 {
-    if (!this->_handle) return RESULT_OPERATION_FAIL;
-    
-    // check whether current schedule policy supports priority levels
-    
-    int current_policy;
+
+    pid_t selfTid = syscall(SYS_gettid);
+
+        // check whether current schedule policy supports priority levels
+    int current_policy = SCHED_OTHER;
     struct sched_param current_param;
+    int nice = 0;
     int ans;
-    if (pthread_getschedparam( (pthread_t) this->_handle, &current_policy, &current_param))
+
+    if (sched_getparam(selfTid, &current_param))
     {
         // cannot retreieve values
         return RESULT_OPERATION_FAIL;
     }   
 
-    //int pthread_priority = 0 ;
+    int pthread_priority_min;
 
-    switch(p)
-    {
-    case PRIORITY_REALTIME:
-        //pthread_priority = pthread_priority_max;
+#if 1
+    pthread_priority_min = sched_get_priority_min(SCHED_RR);
+#else
+    pthread_priority_min = 1;
+#endif
+	int pthread_priority = 0 ;
+
+	switch(p)
+	{
+	case PRIORITY_REALTIME:
+		//pthread_priority = pthread_priority_max;
         current_policy = SCHED_RR;
-        break;
-    case PRIORITY_HIGH:
-        //pthread_priority = (pthread_priority_max + pthread_priority_min)/2;
+        pthread_priority = pthread_priority_min + 1;
+        nice = 0;
+		break;
+	case PRIORITY_HIGH:
+		//pthread_priority = (pthread_priority_max + pthread_priority_min)/2;
         current_policy = SCHED_RR;
-        break;
-    case PRIORITY_NORMAL:
-    case PRIORITY_LOW:
-    case PRIORITY_IDLE:
-        //pthread_priority = 0;
+        pthread_priority = pthread_priority_min;
+        nice = 0;
+		break;
+	case PRIORITY_NORMAL:
+        pthread_priority = 0;
         current_policy = SCHED_OTHER;
+        nice = 0;
         break;
-    }
+	case PRIORITY_LOW:
+        pthread_priority = 0;
+        current_policy = SCHED_OTHER;
+        nice = 10;
+        break;
+	case PRIORITY_IDLE:
+		pthread_priority = 0;
+        current_policy = SCHED_IDLE;
+        nice = 0;
+		break;
+	}
+    // change the inhertiable behavior
+    current_policy |= SCHED_RESET_ON_FORK;
 
-    current_param.__sched_priority = current_policy;
-    if ( (ans = pthread_setschedparam( (pthread_t) this->_handle, current_policy, &current_param)) )
+    current_param.__sched_priority = pthread_priority;
+
+  
+
+    
+    // do not use pthread version as it will make the priority be inherited by a thread child
+	if ( (ans = sched_setscheduler(selfTid, current_policy , &current_param)) )
+	{
+        if (ans == EPERM)
+        {
+            //DBG_PRINT("warning, current process hasn't the right permission to set threads priority\n");
+        }
+		return RESULT_OPERATION_FAIL;
+	}
+
+
+    if ((current_policy == SCHED_OTHER) || (current_policy == SCHED_BATCH))
     {
-        return RESULT_OPERATION_FAIL;
+        if (setpriority(PRIO_PROCESS, selfTid, nice)) {
+            return RESULT_OPERATION_FAIL;
+        }
     }
-    return  RESULT_OK;
+    
+
+	return  RESULT_OK;
 }
 
 Thread::priority_val_t Thread::getPriority()
 {
-    if (!this->_handle) return PRIORITY_NORMAL;
+	if (!this->_handle) return PRIORITY_NORMAL;
 
     int current_policy;
     struct sched_param current_param;
@@ -116,14 +163,14 @@ Thread::priority_val_t Thread::getPriority()
     int pthread_priority_min = sched_get_priority_min(SCHED_RR);
 
     if (current_param.__sched_priority ==(pthread_priority_max ))
-    {
-        return PRIORITY_REALTIME;
-    }
-    if (current_param.__sched_priority >=(pthread_priority_max + pthread_priority_min)/2)
-    {
-        return PRIORITY_HIGH;
-    }
-    return PRIORITY_NORMAL;
+	{
+		return PRIORITY_REALTIME;
+	}
+	if (current_param.__sched_priority >=(pthread_priority_max + pthread_priority_min)/2)
+	{
+		return PRIORITY_HIGH;
+	}
+	return PRIORITY_NORMAL;
 }
 
 u_result Thread::join(unsigned long timeout)
@@ -131,6 +178,7 @@ u_result Thread::join(unsigned long timeout)
     if (!this->_handle) return RESULT_OK;
     
     pthread_join((pthread_t)(this->_handle), NULL);
+    this->_handle = 0;
     return RESULT_OK;
 }
 

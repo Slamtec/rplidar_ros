@@ -1,6 +1,32 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Forthcoming
+-----------
+* Update README
+* Add launch file for RPLIDAR S3
+* Add launch file for RPLIDAR C1
+* Update SDK.
+  * Re-implemented the data retrieving logic based on async fetching and decoding mechanism to improve performance
+  * RPLIDAR C1 support
+  * UltraDense protocol support
+  * support for stoppping A1 motor
+  * Optimize lidar driver for switching S2E workingmode
+* Align version number with rest of repository (`#74 <https://github.com/Slamtec/rplidar_ros/issues/74>`_)
+* Install udev rules via debian. (`#126 <https://github.com/Slamtec/rplidar_ros/issues/126>`_)
+* Bugfix:create_udev_rules.sh dose not take effect immediately.
+* Eliminate compilation warnings:reference objects always have true values
+* Reformat: aligning text
+* When node starts to reset rplidar, if rplidar info is not obtained within 15 seconds, rplidar reset fails
+* Add initial_reset option to reset rplidar on node start
+* Modify: change the unsigned long to int in wait function to fix narrowing error
+* Add default case for switch statement to avoid compilation warning
+* Remove "pragma once" in cpp source file
+* Add launch file for a2m*
+* Modify the comparison type to NULL
+* Contributors: Babak-SSh, Tim Clephas, Tony Baltovski, Ubuntu248, Victor Belov, Wang DeYou, WubinXia, kint, yzx
+
 2.0.0 (2021-10-8)
 ------------------
 * Update RPLIDAR SDK to 2.0.0

@@ -83,6 +83,12 @@ The command for RPLIDAR T1 is :
 roslaunch rplidar_ros view_rplidar_t1.launch
 ```
 
+The command for RPLIDAR C1 is :
+
+```bash
+roslaunch rplidar_ros view_rplidar_c1.launch
+```
+
 You should see rplidar's scan result in the rviz.
 
 ### II. Run rplidar node and view using test application
@@ -145,6 +151,12 @@ The command for RPLIDAR T1 is :
 
 ```bash
 roslaunch rplidar_ros rplidar_t1.launch
+```
+
+The command for RPLIDAR C1 is :
+
+```bash
+roslaunch rplidar_ros rplidar_c1.launch
 ```
 
 and in another terminal, run the following command
