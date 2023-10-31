@@ -55,6 +55,7 @@
 typedef sl_lidar_cmd_packet_t rplidar_cmd_packet_t;
 typedef sl_lidar_ans_header_t rplidar_ans_header_t;
 
+
 #if defined(_WIN32)
 #pragma pack()
 #endif

@@ -24,6 +24,7 @@ SLAMTEC LIDAR Tutorial: <https://github.com/robopeak/rplidar_ros/wiki>
 |RPLIDAR S2E             |
 |RPLIDAR S3              |
 |RPLIDAR T1              |
+|RPLIDAR C1              |
 
 ## How to install ROS2
 
@@ -167,6 +168,12 @@ The command for RPLIDAR T1 is :
 
 ```bash
 ros2 launch rplidar_ros view_rplidar_t1_launch.py
+```
+
+The command for RPLIDAR C1 is :
+
+```bash
+ros2 launch rplidar_ros view_rplidar_c1_launch.py
 ```
 
 Notice: different lidar use different serial_baudrate.

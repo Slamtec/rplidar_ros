@@ -30,6 +30,8 @@ FILE(GLOB RPLIDAR_SDK_SRC
 else()
 FILE(GLOB RPLIDAR_SDK_SRC 
   "${RPLIDAR_SDK_PATH}/src/arch/linux/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/dataunpacker/*.cpp"
+  "${RPLIDAR_SDK_PATH}/src/dataunpacker/unpacker/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/hal/*.cpp"
   "${RPLIDAR_SDK_PATH}/src/*.cpp"
 )

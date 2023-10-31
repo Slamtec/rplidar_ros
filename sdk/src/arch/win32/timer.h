@@ -40,8 +40,10 @@
 
 namespace rp{ namespace arch{
     void HPtimer_reset();
-    _u32 getHDTimer();
+    _u64 getHDTimer();
+    _u64 getHDTimer_us();
+
 }}
 
 #define getms()   rp::arch::getHDTimer()
-
+#define getus()   rp::arch::getHDTimer_us()
