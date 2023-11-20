@@ -2,8 +2,8 @@
 Changelog for package rplidar_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.1.5 (2023-11-20)
+------------------
 * Update RPLIDAR SDK to 2.1.0
   * Support RPLIDAR C1 (`#142 <https://github.com/Slamtec/rplidar_ros/issues/142>`_)
   * Re-implemented the data retrieving logic based on async fetching and decoding mechanism to improve performance
