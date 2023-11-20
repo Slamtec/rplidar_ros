@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro"
+  name="rplidar">
+
+  <xacro:include filename="$(find rplidar_ros)/urdf/rplidar.urdf.xacro" />
+
+  <xacro:rplidar_a2 name="rplidar_laser" ros_topic="scan" />
+</robot>
