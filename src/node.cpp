@@ -35,6 +35,7 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "std_srvs/Empty.h"
+#include "rplidar_ros/motor_speed.h"
 #include "sl_lidar.h" 
 
 #ifndef _countof
@@ -52,6 +53,7 @@ enum {
 using namespace sl;
 
 ILidarDriver * drv = NULL;
+static bool scan_frequency_tunning_after_scan_check;
 
 void publish_scan(ros::Publisher *pub,
                   sl_lidar_response_measurement_node_hq_t *nodes,
@@ -214,6 +216,29 @@ bool start_motor(std_srvs::Empty::Request &req,
   return true;
 }
 
+bool set_motor_speed(rplidar_ros::motor_speed::Request &req, 
+                                    rplidar_ros::motor_speed::Response &res)
+{
+  if(!drv)
+       return false;
+  if(drv->isConnected())
+  {
+      uint16_t speed = 
+          (scan_frequency_tunning_after_scan_check ?
+            req.speed : (req.speed > 1023? 1023 : req.speed));
+      ROS_DEBUG("Set motor speed %d", speed);
+      sl_result ans=drv->setMotorSpeed(speed);
+      if (SL_IS_OK(ans)) {
+          char errorBuf[128] = { 0 };
+          std::sprintf(errorBuf,"Set motor speed %d success\0", speed);
+          res.result = std::string(errorBuf);
+      }else res.result = "Set motor speed fail";
+   }
+   else ROS_INFO("lost connection");
+
+  return true;
+}
+
 static float getAngle(const sl_lidar_response_measurement_node_hq_t& node)
 {
     return node.angle_z_q14 * 90.f / 16384.f;
@@ -329,13 +354,16 @@ int main(int argc, char * argv[]) {
     sl_lidar_response_device_info_t devinfo;
     op_result = drv->getDeviceInfo(devinfo);
     bool scan_frequency_tunning_after_scan = false;
+    scan_frequency_tunning_after_scan_check = false;
 
     if( (devinfo.model>>4) > LIDAR_S_SERIES_MINUM_MAJOR_ID){
         scan_frequency_tunning_after_scan = true;
+        scan_frequency_tunning_after_scan_check = true;
     }
-    //two service for start/stop lidar rotate
+    //three service for start/stop/set lidar rotate
     ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
     ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
+    ros::ServiceServer set_motor_speed_service = nh.advertiseService("set_motor_speed", set_motor_speed);
 
     if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
        //start RPLIDAR A serials  rotate by pwm
