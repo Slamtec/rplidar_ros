@@ -149,6 +149,42 @@ bool getRPLIDARDeviceInfo(ILidarDriver * drv)
     return true;
 }
 
+bool getRPLIDARVersionTag(ILidarDriver* drv)
+{
+    sl_result     op_result;
+    sl_lidar_response_fw_versiontag_body_t versionTag;
+
+    op_result = drv->getVersionTag(versionTag);
+    if (SL_IS_FAIL(op_result)) {
+        if (op_result == SL_RESULT_OPERATION_TIMEOUT) {
+            ROS_ERROR("Error, operation time out. RESULT_OPERATION_TIMEOUT! ");
+        }
+        else {
+            ROS_ERROR("Error, unexpected error, code: %x", op_result);
+        }
+        return false;
+    }
+    {
+        char buffer[64];
+
+        const char* fmt = "%d.%d.%d_%s";
+
+        auto major = versionTag.unified_version >> 24;
+        auto minor = (versionTag.unified_version >> 16) & 0xffu;
+        auto patch = versionTag.unified_version & 0xffffu;
+
+#if defined(WIN32) || defined(_WIN32)
+        sprintf_s(buffer, fmt, major, minor, patch, versionTag.version_suffix);
+#else
+        snprintf(buffer, sizeof(buffer), fmt, major, minor, patch, versionTag.version_suffix);
+#endif
+        ROS_INFO("Firmware VerTag: %s", buffer);
+
+    }
+
+    return true;
+}
+
 bool resetRPLIDAR(ILidarDriver * drv)
 {
     sl_result     op_result;
@@ -216,6 +252,9 @@ bool start_motor(std_srvs::Empty::Request &req,
   return true;
 }
 
+//example:
+//rosservice list
+//rosservice call /set_motor_speed "speed: 1023"
 bool set_motor_speed(rplidar_ros::motor_speed::Request &req, 
                                     rplidar_ros::motor_speed::Response &res)
 {
@@ -322,6 +361,12 @@ int main(int argc, char * argv[]) {
        delete drv;
        return -1;
     }
+    // get rplidar versionTag
+    if (!getRPLIDARVersionTag(drv)) {
+        delete drv;
+        return -1;
+    }
+
     if(initial_reset) {
         ROS_INFO("Resetting rplidar");
         if (!resetRPLIDAR(drv)) {

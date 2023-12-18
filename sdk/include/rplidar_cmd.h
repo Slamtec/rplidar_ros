@@ -50,6 +50,7 @@
 
 // Commands without payload but have response
 #define RPLIDAR_CMD_GET_DEVICE_INFO          SL_LIDAR_CMD_GET_DEVICE_INFO
+#define RPLIDAR_CMD_GET_VERSIONTAG          SL_LIDAR_CMD_GET_VERSIONTAG
 #define RPLIDAR_CMD_GET_DEVICE_HEALTH        SL_LIDAR_CMD_GET_DEVICE_HEALTH
 
 #define RPLIDAR_CMD_GET_SAMPLERATE           SL_LIDAR_CMD_GET_SAMPLERATE //added in fw 1.17
@@ -100,6 +101,8 @@ typedef sl_lidar_payload_new_bps_confirmation_t  rplidar_payload_new_bps_confirm
 // Response
 // ------------------------------------------
 #define RPLIDAR_ANS_TYPE_DEVINFO                                 SL_LIDAR_ANS_TYPE_DEVINFO
+// Added in FW ver 1.21rc5
+#define RPLIDAR_ANS_TYPE_VERSIONTAG                                 SL_LIDAR_ANS_TYPE_VERSIONTAG
 #define RPLIDAR_ANS_TYPE_DEVHEALTH                               SL_LIDAR_ANS_TYPE_DEVHEALTH
 #define RPLIDAR_ANS_TYPE_MEASUREMENT                             SL_LIDAR_ANS_TYPE_MEASUREMENT
 // Added in FW ver 1.17
@@ -193,6 +196,7 @@ typedef sl_lidar_response_hq_capsule_measurement_nodes_t           rplidar_respo
 typedef sl_lidar_response_get_lidar_conf_t       rplidar_response_get_lidar_conf_t;
 typedef sl_lidar_response_set_lidar_conf_t       rplidar_response_set_lidar_conf_t;
 typedef sl_lidar_response_device_info_t          rplidar_response_device_info_t;
+typedef sl_lidar_response_fw_versiontag_body_t          rplidar_response_fw_versiontag_body_t;
 typedef sl_lidar_response_device_health_t        rplidar_response_device_health_t;
 typedef sl_lidar_ip_conf_t                       rplidar_ip_conf_t;
 typedef sl_lidar_response_device_macaddr_info_t  rplidar_response_device_macaddr_info_t;

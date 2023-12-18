@@ -143,6 +143,12 @@ public:
     /// \param timeout       The operation timeout value (in millisecond) for the serial port communication  
     u_result getDeviceInfo(rplidar_response_device_info_t & info, _u32 timeout = DEFAULT_TIMEOUT);
 
+    /// Get the framware version information of the RPLIDAR include the serial number, firmware version, device model etc.
+    /// 
+    /// \param info          The framware version information returned from the RPLIDAR
+    /// \param timeout       The operation timeout value (in millisecond) for the serial port communication  
+    u_result getVersionTag(rplidar_response_fw_versiontag_body_t& versiontag, _u32 timeout = DEFAULT_TIMEOUT);
+
     /// Set the RPLIDAR's motor pwm when using accessory board, currently valid for A2 only.
     /// 
     /// \param pwm           The motor pwm value would like to set 

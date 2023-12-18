@@ -60,6 +60,7 @@
 #define SL_LIDAR_CMD_GET_DEVICE_HEALTH      0x52
 
 #define SL_LIDAR_CMD_GET_SAMPLERATE         0x59 //added in fw 1.17
+#define SL_LIDAR_CMD_GET_VERSIONTAG           0x5A //added in fw 1.21rc5
 
 #define SL_LIDAR_CMD_HQ_MOTOR_SPEED_CTRL    0xA8
 
@@ -150,9 +151,11 @@ typedef struct _sl_lidar_payload_new_bps_confirmation_t {
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED        0x85
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED  0x86
 
-
 // Added in FW ver 1.17
 #define SL_LIDAR_ANS_TYPE_SAMPLE_RATE      0x15
+
+// Added in FW ver 1.21rc5
+#define SL_LIDAR_ANS_TYPE_VERSIONTAG          0x18
 
 //added in FW ver 1.24
 #define SL_LIDAR_ANS_TYPE_GET_LIDAR_CONF     0x20
@@ -338,6 +341,15 @@ typedef struct _sl_lidar_response_device_info_t
     sl_u8   hardware_version;
     sl_u8   serialnum[16];
 } __attribute__((packed)) sl_lidar_response_device_info_t;
+
+typedef struct _sl_lidar_response_fw_versiontag_body_t
+{
+    sl_u32  unified_version;
+    sl_u16  unified_hwver;
+    sl_s8   version_suffix[11]; //without null ending
+    sl_s8   build_date[11]; //without null ending
+    sl_s8   build_time[8];  //without null ending
+} __attribute__((packed)) sl_lidar_response_fw_versiontag_body_t;
 
 typedef struct _sl_lidar_response_device_health_t
 {

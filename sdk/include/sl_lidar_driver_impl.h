@@ -75,6 +75,7 @@ namespace sl {
 			DEPRECATED(sl_result grabScanData(sl_lidar_response_measurement_node_t * nodebuffer, size_t& count, sl_u32 timeout = DEFAULT_TIMEOUT));
 			sl_result grabScanDataHq(sl_lidar_response_measurement_node_hq_t* nodebuffer, size_t& count, sl_u32 timeout = DEFAULT_TIMEOUT);
 			sl_result getDeviceInfo(sl_lidar_response_device_info_t& info, sl_u32 timeout = DEFAULT_TIMEOUT);
+			sl_result getDeviceInfo(sl_lidar_response_fw_versiontag_body_t& versiontag, sl_u32 timeout = DEFAULT_TIMEOUT);
 			sl_result checkMotorCtrlSupport(MotorCtrlSupport & support, sl_u32 timeout = DEFAULT_TIMEOUT);
 			sl_result getFrequency(const LidarScanMode& scanMode, const sl_lidar_response_measurement_node_hq_t* nodes, size_t count, float& frequency);
 			sl_result setLidarIpConf(const sl_lidar_ip_conf_t& conf, sl_u32 timeout);

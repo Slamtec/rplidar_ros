@@ -133,6 +133,11 @@ namespace rp { namespace standalone{ namespace rplidar {
         return (_lidarDrv)->getDeviceInfo(info, timeout);
     }
 
+    u_result RPlidarDriver::getVersionTag(rplidar_response_fw_versiontag_body_t& versiontag, _u32 timeout)
+    {
+        return (_lidarDrv)->getVersionTag(versiontag, timeout);
+    }
+
     u_result RPlidarDriver::setMotorPWM(_u16 pwm)
     {
         return (_lidarDrv)->setMotorSpeed(pwm);

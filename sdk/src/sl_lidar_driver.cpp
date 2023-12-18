@@ -830,6 +830,30 @@ namespace sl {
             return (sl_result)ans;
         }
 
+        sl_result getVersionTag(sl_lidar_response_fw_versiontag_body_t& versiontag, sl_u32 timeout = DEFAULT_TIMEOUT)
+        {
+            rp::hal::AutoLocker l(_op_locker);
+            if (!isConnected()) return SL_RESULT_OPERATION_NOT_SUPPORT;
+
+
+            u_result ans;
+            internal::message_autoptr_t ans_frame;
+
+            ans = _sendCommandWithResponse(SL_LIDAR_CMD_GET_VERSIONTAG, SL_LIDAR_ANS_TYPE_VERSIONTAG, ans_frame, timeout);
+
+            if (IS_FAIL(ans)) return ans;
+            if (ans_frame->getPayloadSize() < sizeof(rplidar_response_fw_versiontag_body_t))
+            {
+                return RESULT_INVALID_DATA;
+            }
+            versiontag = *(rplidar_response_fw_versiontag_body_t*)ans_frame->getDataBuf();
+#ifdef _CPU_ENDIAN_BIG
+            info.firmware_version = le16_to_cpu(info.firmware_version);
+#endif
+
+            return (sl_result)ans;
+        }
+
         sl_result checkMotorCtrlSupport(MotorCtrlSupport & support, sl_u32 timeout = DEFAULT_TIMEOUT)
         {
             rp::hal::AutoLocker l(_op_locker);

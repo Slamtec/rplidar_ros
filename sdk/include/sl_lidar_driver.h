@@ -374,6 +374,12 @@ namespace sl {
         /// \param info          The device information returned from the RPLIDAR
         /// \param timeout       The operation timeout value (in millisecond) for the serial port communication  
         virtual sl_result getDeviceInfo(sl_lidar_response_device_info_t& info, sl_u32 timeout = DEFAULT_TIMEOUT) = 0;
+        
+        /// Get the framware version information of the RPLIDAR include the serial number, firmware version, device model etc.
+        /// 
+        /// \param info          The framware version information returned from the RPLIDAR
+        /// \param timeout       The operation timeout value (in millisecond) for the serial port communication  
+        virtual sl_result getVersionTag(sl_lidar_response_fw_versiontag_body_t& versiontag, sl_u32 timeout = DEFAULT_TIMEOUT) = 0;
 
         /// Check whether the device support motor control
         /// Note: this API will disable grab.
