@@ -48,6 +48,12 @@
 
 #define ROS2VERSION "1.0.1"
 
+enum {
+    LIDAR_A_SERIES_MINUM_MAJOR_ID   = 0,
+    LIDAR_S_SERIES_MINUM_MAJOR_ID   = 5,
+    LIDAR_T_SERIES_MINUM_MAJOR_ID   = 8,
+};
+
 using namespace sl;
 
 bool need_exit = false;
@@ -412,6 +418,19 @@ public:
             return -1;
         }
 
+        sl_lidar_response_device_info_t devinfo;
+        op_result = drv->getDeviceInfo(devinfo);
+        bool scan_frequency_tunning_after_scan = false;
+
+        if( (devinfo.model>>4) > LIDAR_S_SERIES_MINUM_MAJOR_ID){
+            scan_frequency_tunning_after_scan = true;
+        }
+
+        if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
+            //start RPLIDAR A serials  rotate by pwm
+            drv->setMotorSpeed(600);
+        }
+
         /* start motor and scanning */
         if (!auto_standby && !this->start()) {
             delete drv; drv = nullptr;
@@ -451,6 +470,12 @@ public:
             scan_duration = (end_scan_time - start_scan_time).seconds();
 
             if (op_result == SL_RESULT_OK) {
+                if(scan_frequency_tunning_after_scan) { //Set scan frequency(For Slamtec Tof lidar)
+                    RCLCPP_ERROR(this->get_logger(), "set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
+                    drv->setMotorSpeed(scan_frequency*60); //rpm 
+                    scan_frequency_tunning_after_scan = false;
+                    continue;
+                }
                 op_result = drv->ascendScanData(nodes, count);
                 float angle_min = DEG2RAD(0.0f);
                 float angle_max = DEG2RAD(359.0f);
