@@ -201,7 +201,7 @@ u_result AsyncTransceiver::openChannelAndBind(IChannel* channel)
 		rp::hal::AutoLocker l(_opLocker);
 
         // try to open the channel ...
-        Result<nullptr_t> ans = SL_RESULT_OK;
+        Result<std::nullptr_t> ans = SL_RESULT_OK;
 
         if (!channel->open()) {
             ans= RESULT_OPERATION_FAIL;
