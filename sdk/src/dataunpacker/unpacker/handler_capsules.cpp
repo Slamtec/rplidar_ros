@@ -810,7 +810,7 @@ static _u64 _getSampleDelayOffsetInUltraDenseMode(const SlamtecLidarTimingDesc& 
     // center of the sample duration
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
-    const _u64 groupingDelay = (31 - sampleIdx) * timing.sample_duration_uS;
+    const _u64 groupingDelay = ((32 * 2 - 1) - sampleIdx) * timing.sample_duration_uS;
 
 
     return sampleFilterDelay + sampleDelay + tranmissionDelay + timing.linkage_delay_uS + groupingDelay;
