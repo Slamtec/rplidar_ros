@@ -18,7 +18,7 @@ if(MSVC)
   )
 endif()
 
-set(RPLIDAR_SDK_PATH "./sdk/")
+set(RPLIDAR_SDK_PATH "${PROJECT_SOURCE_DIR}/sdk/")
 
 if(APPLE)
 add_compile_definitions(_MACOS)
