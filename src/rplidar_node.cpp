@@ -343,12 +343,12 @@ class RPlidarNode : public rclcpp::Node
         }
 
         RCLCPP_INFO(this->get_logger(), "Start");
-        drv->setMotorSpeed();
         if (!set_scan_mode()) {
             this->stop();
             RCLCPP_ERROR(this->get_logger(), "Failed to set scan mode");
             return false;
         }
+        drv->setMotorSpeed(scan_frequency * 60);
         is_scanning = true;
         return true;
     }
