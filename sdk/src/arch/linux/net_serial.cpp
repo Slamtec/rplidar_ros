@@ -424,7 +424,8 @@ void raw_serial::cancelOperation()
     _operation_aborted = true;
     if (_selfpipe[1] == -1) return;
 
-    (int)::write(_selfpipe[1], "x", 1);
+    auto res = ::write(_selfpipe[1], "x", 1);
+    (void)res;  //  Not checking the return value of write
 }
 
 _u32 raw_serial::getTermBaudBitmap(_u32 baud)
