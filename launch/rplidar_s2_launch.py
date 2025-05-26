@@ -18,6 +18,7 @@ def generate_launch_description():
     inverted = LaunchConfiguration('inverted', default='false')
     angle_compensate = LaunchConfiguration('angle_compensate', default='true')
     scan_mode = LaunchConfiguration('scan_mode', default='DenseBoost')
+    ns = LaunchConfiguration('ns', default='')
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -55,10 +56,16 @@ def generate_launch_description():
             default_value=scan_mode,
             description='Specifying scan mode of lidar'),
 
+        DeclareLaunchArgument(
+            'ns',
+            default_value=ns,
+            description='Specifying namespace'),
+
         Node(
             package='rplidar_ros',
             executable='rplidar_node',
             name='rplidar_node',
+            namespace=ns,
             parameters=[{'channel_type':channel_type,
                          'serial_port': serial_port,
                          'serial_baudrate': serial_baudrate,
