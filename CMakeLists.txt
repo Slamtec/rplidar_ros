@@ -77,6 +77,28 @@ ament_target_dependencies(rplidar_client
   std_srvs
   sensor_msgs
 )
+
+add_library(rplidar_sdk SHARED ${RPLIDAR_SDK_SRC})
+ament_target_dependencies(rplidar_sdk
+  rclcpp
+  std_srvs
+  sensor_msgs
+)
+install(
+  TARGETS rplidar_sdk
+  EXPORT export_rplidar_sdk
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+ament_export_targets(export_rplidar_sdk)
+install(DIRECTORY 
+  include
+  sdk/include
+  DESTINATION .
+)
+ament_export_include_directories(sdk/include)
+
 ################################################################################
 # Install
 ################################################################################
