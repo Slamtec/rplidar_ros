@@ -40,6 +40,9 @@
 
 #include <signal.h>
 
+#include <algorithm>
+
+
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
 #endif
@@ -85,7 +88,7 @@ class RPlidarNode : public rclcpp::Node
         this->declare_parameter<bool>("auto_standby", false);
         this->declare_parameter<std::string>("topic_name",std::string("scan"));
         this->declare_parameter<std::string>("scan_mode",std::string());
-        this->declare_parameter<float>("scan_frequency",10);
+        this->declare_parameter<float>("scan_frequency",15);
         
         this->get_parameter_or<std::string>("channel_type", channel_type, "serial");
         this->get_parameter_or<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
@@ -93,7 +96,7 @@ class RPlidarNode : public rclcpp::Node
         this->get_parameter_or<std::string>("udp_ip", udp_ip, "192.168.11.2"); 
         this->get_parameter_or<int>("udp_port", udp_port, 8089);
         this->get_parameter_or<std::string>("serial_port", serial_port, "/dev/ttyUSB0"); 
-        this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 1000000/*256000*/);//ros run for A1 A2, change to 256000 if A3
+        this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 256000/*1000000*/);//1000000 for A1 A2, change to 256000 if A3
         this->get_parameter_or<std::string>("frame_id", frame_id, "laser_frame");
         this->get_parameter_or<bool>("inverted", inverted, false);
         this->get_parameter_or<bool>("angle_compensate", angle_compensate, false);
@@ -104,7 +107,7 @@ class RPlidarNode : public rclcpp::Node
         if(channel_type == "udp")
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 20.0);
         else
-            this->get_parameter_or<float>("scan_frequency", scan_frequency, 10.0);
+            this->get_parameter_or<float>("scan_frequency", scan_frequency, 15.0);
     }
 
     bool getRPLIDARDeviceInfo(ILidarDriver * drv)
@@ -343,7 +346,12 @@ class RPlidarNode : public rclcpp::Node
         }
 
         RCLCPP_INFO(this->get_logger(), "Start");
-        drv->setMotorSpeed();
+        
+        // Only spin up generically for TOF; A-series was already set with a_pwm_cmd_
+        if (is_tof_series_) {
+            drv->setMotorSpeed();  // initial spin; later you already adjust to scan_frequency in the loop
+        }
+        
         if (!set_scan_mode()) {
             this->stop();
             RCLCPP_ERROR(this->get_logger(), "Failed to set scan mode");
@@ -420,16 +428,19 @@ public:
 
         sl_lidar_response_device_info_t devinfo;
         op_result = drv->getDeviceInfo(devinfo);
-        bool scan_frequency_tunning_after_scan = false;
+        
+        is_tof_series_ = ((devinfo.model >> 4) > LIDAR_S_SERIES_MINUM_MAJOR_ID);
+        bool scan_frequency_tunning_after_scan = is_tof_series_;
+        a_speed_applied_after_start_ = false;
 
-        if( (devinfo.model>>4) > LIDAR_S_SERIES_MINUM_MAJOR_ID){
-            scan_frequency_tunning_after_scan = true;
+        if (!is_tof_series_) { // A-series (A1/A2/A3) use PWM-like units
+            float desired = std::clamp(scan_frequency, 5.0f, 15.0f);
+            a_pwm_cmd_ = static_cast<sl_u16>(desired / 10.0f * 600.0f + 0.5f); // 900 ≈ 15 Hz
+            drv->setMotorSpeed(a_pwm_cmd_); // start & set speed now
         }
-
-        if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
-            //start RPLIDAR A serials  rotate by pwm
-            drv->setMotorSpeed(600);
-        }
+        
+        RCLCPP_INFO(this->get_logger(), "is_tof_series_=%d baud=%d scan_frequency=%.2f a_pwm_cmd_=%u",
+                    is_tof_series_, serial_baudrate, scan_frequency, a_pwm_cmd_);
 
         /* start motor and scanning */
         if (!auto_standby && !this->start()) {
@@ -475,6 +486,14 @@ public:
                     drv->setMotorSpeed(scan_frequency*60); //rpm 
                     scan_frequency_tunning_after_scan = false;
                     continue;
+                }
+                if (!is_tof_series_ && !a_speed_applied_after_start_) {
+                    RCLCPP_INFO(this->get_logger(),
+                        "Applying A-series PWM after start: pwm=%u for scan_frequency=%.2f Hz",
+                        a_pwm_cmd_, scan_frequency);
+                    drv->setMotorSpeed(a_pwm_cmd_);   // A-series wants PWM units
+                    a_speed_applied_after_start_ = true;
+                    continue; // let the motor stabilize; next loop we'll read data
                 }
                 op_result = drv->ascendScanData(nodes, count);
                 float angle_min = DEG2RAD(0.0f);
@@ -566,7 +585,7 @@ public:
     int serial_baudrate = 115200;
     std::string frame_id;
     bool inverted = false;
-    bool angle_compensate = true;
+    bool angle_compensate = false;
     bool flip_x_axis = false;
     bool auto_standby = false;
     float max_distance = 8.0;
@@ -575,6 +594,9 @@ public:
     float scan_frequency;
     /* State */
     bool is_scanning = false;
+    bool is_tof_series_ = false;      // S/T series use RPM path after first scan
+    sl_u16 a_pwm_cmd_ = 600;          // A-series PWM command (600 ≈ 10 Hz)
+    bool a_speed_applied_after_start_ = false;
 
     ILidarDriver *drv = nullptr;
 };
