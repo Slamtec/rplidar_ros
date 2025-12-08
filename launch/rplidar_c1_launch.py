@@ -18,7 +18,7 @@ def generate_launch_description():
     inverted = LaunchConfiguration('inverted', default='false')
     angle_compensate = LaunchConfiguration('angle_compensate', default='true')
     scan_mode = LaunchConfiguration('scan_mode', default='Standard')
-
+    auto_standby = LaunchConfiguration('auto_standby', default='false')
     return LaunchDescription([
         DeclareLaunchArgument(
             'channel_type',
@@ -54,7 +54,12 @@ def generate_launch_description():
             'scan_mode',
             default_value=scan_mode,
             description='Specifying scan mode of lidar'),
-
+        
+        DeclareLaunchArgument(
+            'auto_standby',
+            default_value='false',
+            description='Specifying whether or not to enable auto standby of lidar'),
+        
         Node(
             package='rplidar_ros',
             executable='rplidar_node',
@@ -65,6 +70,7 @@ def generate_launch_description():
                          'frame_id': frame_id,
                          'inverted': inverted,
                          'angle_compensate': angle_compensate,
+                         'auto_standby': auto_standby,
                          'scan_mode': scan_mode}],
             output='screen'),
     ])
