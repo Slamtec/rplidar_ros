@@ -489,7 +489,7 @@ public:
 
             if (op_result == SL_RESULT_OK) {
                 if(scan_frequency_tunning_after_scan) { //Set scan frequency(For Slamtec Tof lidar)
-                    RCLCPP_ERROR(this->get_logger(), "set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
+                    RCLCPP_INFO(this->get_logger(), "set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
                     drv->setMotorSpeed(scan_frequency*60); //rpm 
                     scan_frequency_tunning_after_scan = false;
                     continue;
