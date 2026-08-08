@@ -38,7 +38,9 @@
 #include "sl_lidar.h"
 #include "math.h"
 
+#include <chrono>
 #include <signal.h>
+#include <thread>
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -426,7 +428,7 @@ public:
             scan_frequency_tunning_after_scan = true;
         }
 
-        if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
+        if(!scan_frequency_tunning_after_scan && !auto_standby){ //for RPLIDAR A serials
             //start RPLIDAR A serials  rotate by pwm
             drv->setMotorSpeed(600);
         }
@@ -461,6 +463,12 @@ public:
                     if (is_scanning) {
                         this->stop();
                     }
+                }
+
+                if (!is_scanning) {
+                    rclcpp::spin_some(shared_from_this());
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    continue;
                 }
             }
 
