@@ -55,6 +55,8 @@
 #include <asm/ioctls.h>
 #include <asm/termbits.h>
 #include <sys/ioctl.h>
+
+#include <sys/file.h>
 extern "C" int tcflush(int fildes, int queue_selector);
 #else
 // for other standard UNIX
@@ -97,11 +99,31 @@ bool raw_serial::bind(const char * portname, uint32_t baudrate, uint32_t flags)
 bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
 {
     if (isOpened()) close();
-    
+   
     serial_fd = ::open(portname, O_RDWR | O_NOCTTY | O_NDELAY);
 
     if (serial_fd == -1) return false;
-
+ auto out =::flock(serial_fd, LOCK_EX|LOCK_NB);
+    if(out != 0)
+    {
+        printf("Error, cannot lock the serial port %s.\n",portname);
+        printf("Error code: %d\n", errno);
+        if(errno == EWOULDBLOCK)
+        {
+            printf("The serial port is already locked by another process.\n");
+        }
+        if(errno == EBADF)
+        {
+            printf("The file descriptor is not valid.\n");
+        }
+        if(errno == EINVAL)
+        {
+            printf("The operation is not supported on this file descriptor.\n");
+        }
+        return false;
+    } else {
+        printf("Locked the serial port %s successfully.\n",portname);
+    }
     
 
 #if !defined(__GNUC__)
